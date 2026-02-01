@@ -9,10 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
     "elysia": "^1.4.22",
+    "lucide-react": "^0.563.0",
     "next": "16.1.4",
+    "next-auth": "^4.24.13",
     "postgres": "^3.4.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -9,14 +9,19 @@ import {
   real,
 } from "drizzle-orm/pg-core";
 
-//USERS
+
+// users
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  username: varchar("username", { length: 50 }).notNull().unique(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  passwordHash: text("password_hash").notNull(),
+  username: varchar("username", { length: 50 }),
+  email: varchar("email", { length: 255 }).unique(),
+  passwordHash: text("password_hash"),
+  provider: varchar("provider", { length: 20 }).notNull().default("local"),
+  providerId: varchar("provider_id", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+
 
 //STUDIOS
 export const studios = pgTable("studios", {
@@ -85,7 +90,7 @@ export const ratings = pgTable("ratings", {
   animeId: integer("anime_id")
     .references(() => anime.id)
     .notNull(),
-  value: integer("value").notNull(), 
+  value: integer("value").notNull(),
 });
 
 //FAVORITES
