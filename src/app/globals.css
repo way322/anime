@@ -27,7 +27,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Анимации */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-20px); }
@@ -56,9 +55,7 @@ body {
   animation: tail-wag 3s ease-in-out infinite;
 }
 
-/* Добавьте в конец файла */
 
-/* Дополнительные анимации */
 .animation-delay-2000 {
   animation-delay: 2s;
 }
@@ -67,7 +64,6 @@ body {
   animation-delay: 4s;
 }
 
-/* Плавный вход */
 @keyframes fadeInUp {
   from {
     opacity: 0;
@@ -83,7 +79,6 @@ body {
   animation: fadeInUp 0.6s ease-out;
 }
 
-/* Эффект пульсации для фокуса */
 @keyframes pulse-ring {
   0% {
     transform: scale(0.8);
@@ -111,7 +106,6 @@ body {
   animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-/* Эффект поднятия */
 .hover-lift {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
@@ -121,7 +115,6 @@ body {
   box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.3);
 }
 
-/* Плавный градиент */
 .bg-gradient-animate {
   background-size: 200% 200%;
   animation: gradient 15s ease infinite;
@@ -139,7 +132,6 @@ body {
   }
 }
 
-/* Эффект свечения текста */
 .text-glow {
   text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
 }

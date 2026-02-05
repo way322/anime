@@ -12,13 +12,12 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  
-  // Добавляем настройки страниц
+
   pages: {
     signIn: "/auth/login",
     signOut: "/",
-    error: "/auth/error", // путь к вашей странице ошибки
-    newUser: "/auth/register" // путь для новых пользователей
+    error: "/auth/error",
+    newUser: "/auth/register" 
   },
   
   providers: [
@@ -99,7 +98,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
-  // Отключаем дебаг логи в продакшене
   debug: process.env.NODE_ENV === "development",
 };
 
