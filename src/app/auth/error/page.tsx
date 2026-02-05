@@ -11,7 +11,6 @@ export default function AuthErrorPage() {
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
-    // Определяем сообщение об ошибке
     const messages: Record<string, string> = {
       "OAuthSignin": "Ошибка при попытке входа через социальную сеть",
       "OAuthCallback": "Ошибка при обработке ответа от социальной сети",

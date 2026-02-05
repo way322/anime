@@ -12,7 +12,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Заполните все поля" }, { status: 400 });
     }
 
-    // Проверка, существует ли пользователь
     const existingUser = await db.query.users.findFirst({
       where: eq(users.email, email), 
     });
