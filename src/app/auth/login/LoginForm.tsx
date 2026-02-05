@@ -29,7 +29,7 @@ export default function LoginForm() {
     if (result?.error) {
       setError("Неверный email или пароль. Проверьте данные и попробуйте снова.");
     } else {
-      window.location.href = "/";
+      window.location.href = "/profile";
     }
   };
 

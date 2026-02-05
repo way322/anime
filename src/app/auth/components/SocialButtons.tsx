@@ -5,7 +5,7 @@ import Image from "next/image";
 
 export default function SocialButtons({ isLogin = true }) {
   const handleSocialLogin = (provider: string) => {
-    signIn(provider, { callbackUrl: "/" });
+    signIn(provider, { callbackUrl: "/profile" });
   };
 
   return (

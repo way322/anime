@@ -48,7 +48,7 @@ export default function RegisterForm() {
         return;
       }
 
-      router.push("/");
+      router.push("/profile");
       router.refresh();
     } catch (err) {
       console.error("Ошибка регистрации:", err);
