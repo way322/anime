@@ -1,5 +1,5 @@
 {
-  "id": "01b37807-4d6e-4878-bb51-2301a01c2356",
+  "id": "dd4f31f8-6881-4f96-98db-9ae807790225",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -38,13 +38,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "episodes_count": {
-          "name": "episodes_count",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "default": 0
-        },
         "status": {
           "name": "status",
           "type": "varchar(20)",
@@ -58,6 +51,12 @@
           "primaryKey": false,
           "notNull": false,
           "default": 0
+        },
+        "external_url": {
+          "name": "external_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
         },
         "created_at": {
           "name": "created_at",
@@ -176,69 +175,6 @@
         "anime_images_anime_id_anime_id_fk": {
           "name": "anime_images_anime_id_anime_id_fk",
           "tableFrom": "anime_images",
-          "tableTo": "anime",
-          "columnsFrom": [
-            "anime_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.episodes": {
-      "name": "episodes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "anime_id": {
-          "name": "anime_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "episode_number": {
-          "name": "episode_number",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "duration_minutes": {
-          "name": "duration_minutes",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "release_date": {
-          "name": "release_date",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "episodes_anime_id_anime_id_fk": {
-          "name": "episodes_anime_id_anime_id_fk",
-          "tableFrom": "episodes",
           "tableTo": "anime",
           "columnsFrom": [
             "anime_id"

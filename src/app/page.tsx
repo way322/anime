@@ -26,8 +26,10 @@ export default function Home() {
                             Kitsune
                         </span>
                     </div>
-
+                    
                     <div className="flex gap-6">
+                        <Link href="/catalog" className="px-6 py-2 rounded-lg border border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 transition-all duration-300"
+                        >каталог</Link>
                         <Link
                             href="/auth/login"
                             className="px-6 py-2 rounded-lg border border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 transition-all duration-300"
