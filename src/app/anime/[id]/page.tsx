@@ -1,17 +1,20 @@
-// src/app/anime/[id]/page.tsx
 import { notFound } from "next/navigation";
 import { db } from "../../../server/db";
-import { anime } from "../../../server/db/schema";
-import { eq } from "drizzle-orm";
+import { anime, ratings, userAnimeStatus } from "../../../server/db/schema";
+import { and, eq } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../api/auth/[...nextauth]/route";
+import AnimeUserActions from "../../components/AnimeUserActions";
+import { NextResponse } from "next/server";
 
 type PageProps = {
   params: Promise<{ id: string }>;
 };
 
 export default async function AnimePlayerPage({ params }: PageProps) {
-  const { id } = await params;            
+  const { id } = await params;
   const animeId = Number.parseInt(id, 10);
 
   if (Number.isNaN(animeId)) notFound();
@@ -21,6 +24,28 @@ export default async function AnimePlayerPage({ params }: PageProps) {
   });
 
   if (!item) notFound();
+
+  // ✅ если пользователь залогинен — достанем его статус и оценку
+  const session = await getServerSession(authOptions);
+  let initialStatus: any = null;
+  let initialRating: number | null = null;
+
+  if (session?.user?.id) {
+    const userId = Number.parseInt(session.user.id, 10);
+    if (!Number.isSafeInteger(userId)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const st = await db.query.userAnimeStatus.findFirst({
+      where: and(eq(userAnimeStatus.userId, userId), eq(userAnimeStatus.animeId, animeId)),
+    });
+    initialStatus = st?.status ?? null;
+
+    const rt = await db.query.ratings.findFirst({
+      where: and(eq(ratings.userId, userId), eq(ratings.animeId, animeId)),
+    });
+    initialRating = rt?.value ?? null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 py-10 px-4">
@@ -50,6 +75,13 @@ export default async function AnimePlayerPage({ params }: PageProps) {
         <div className="mt-6 text-gray-300">
           <p>{item.description ?? "Описание отсутствует."}</p>
         </div>
+
+        {/* ✅ списки и оценка (только для авторизованных) */}
+        <AnimeUserActions
+          animeId={animeId}
+          initialStatus={initialStatus}
+          initialRating={initialRating}
+        />
 
         <div className="mt-6">
           <Link href="/catalog" className="text-sm text-gray-400 hover:text-white">

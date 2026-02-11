@@ -1,0 +1,1 @@
+ALTER TABLE "user_anime_status" ALTER COLUMN "user_id" SET DATA TYPE integer;

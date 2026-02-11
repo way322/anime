@@ -8,9 +8,11 @@ import {
   boolean,
   timestamp,
   real,
+  primaryKey,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-// users (без изменений)
+// users
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username", { length: 50 }),
@@ -34,17 +36,16 @@ export const genres = pgTable("genres", {
   name: varchar("name", { length: 50 }).notNull().unique(),
 });
 
-// ANIME — добавил external_url (iframe/link), удалил episodesCount
+// ANIME
 export const anime = pgTable("anime", {
   id: serial("id").primaryKey(),
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   studioId: integer("studio_id").references(() => studios.id),
   releaseYear: integer("release_year"),
-  // episodesCount: integer("episodes_count").default(0), <-- удалено по вашей задаче
-  status: varchar("status", { length: 20 }).default("ongoing"), // ongoing | completed
+  status: varchar("status", { length: 20 }).default("ongoing"),
   rating: real("rating").default(0),
-  externalUrl: text("external_url").notNull(), // <- ссылка на iframe / плеер (ваша новая модель)
+  externalUrl: text("external_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -68,25 +69,63 @@ export const animeImages = pgTable("anime_images", {
   isPoster: boolean("is_poster").default(false),
 });
 
-// RATINGS (оставил, если захотите оценки)
-export const ratings = pgTable("ratings", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  animeId: integer("anime_id")
-    .references(() => anime.id)
-    .notNull(),
-  value: integer("value").notNull(),
-});
+// ✅ USER LISTS / WATCH STATUS
+export const userAnimeStatus = pgTable(
+  "user_anime_status",
+  {
+    userId: integer("user_id")
+      .references(() => users.id)
+      .notNull(),
+    animeId: integer("anime_id")
+      .references(() => anime.id)
+      .notNull(),
+    // watching | planned | dropped | completed
+    status: varchar("status", { length: 20 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.userId, t.animeId] }),
+  })
+);
+
+// RATINGS
+export const ratings = pgTable(
+  "ratings",
+  {
+    id: serial("id").primaryKey(),
+    userId: integer("user_id")
+      .references(() => users.id)
+      .notNull(),
+    animeId: integer("anime_id")
+      .references(() => anime.id)
+      .notNull(),
+    value: integer("value").notNull(),
+  },
+  (t) => ({
+    userAnimeUnique: uniqueIndex("ratings_user_anime_unique").on(
+      t.userId,
+      t.animeId
+    ),
+  })
+);
 
 // FAVORITES
-export const favorites = pgTable("favorites", {
-  userId: integer("user_id")
-    .references(() => users.id)
-    .notNull(),
-  animeId: integer("anime_id")
-    .references(() => anime.id)
-    .notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export const favorites = pgTable(
+  "favorites",
+  {
+    userId: integer("user_id")
+      .references(() => users.id)
+      .notNull(),
+    animeId: integer("anime_id")
+      .references(() => anime.id)
+      .notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => ({
+    userAnimeUnique: uniqueIndex("favorites_user_anime_unique").on(
+      t.userId,
+      t.animeId
+    ),
+  })
+);

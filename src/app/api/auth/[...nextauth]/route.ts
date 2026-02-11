@@ -17,9 +17,9 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/login",
     signOut: "/",
     error: "/auth/error",
-    newUser: "/auth/register" 
+    newUser: "/auth/register"
   },
-  
+
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -64,6 +64,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (!user.email) return false;
 
+      // создаём пользователя в БД при OAuth, если его нет
       if (account?.provider !== "credentials") {
         const existingUser = await db.query.users.findFirst({
           where: eq(users.email, user.email),
@@ -74,29 +75,43 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             username: user.name ?? "fox",
             provider: account?.provider || "oauth",
-            providerId: account?.providerAccountId,
+            providerId: account?.providerAccountId, // это ОК хранить как text
           });
         }
       }
+
       return true;
     },
-    
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.email = user.email;
+
+    async jwt({ token, user, account }) {
+      // при первом логине (и credentials, и oauth) у нас есть user/account
+      if (account && user?.email) {
+        const dbUser = await db.query.users.findFirst({
+          where: eq(users.email, user.email),
+        });
+
+        if (dbUser) {
+          // ✅ кладём id из нашей БД (обычный serial/int)
+          token.id = String(dbUser.id);
+          token.sub = String(dbUser.id); // полезно для совместимости
+          token.email = dbUser.email;
+          token.name = dbUser.username;
+        }
       }
+
       return token;
     },
-    
+
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
+        session.user.id = token.id as string;   // ✅ теперь это id из БД
         session.user.email = token.email as string;
+        session.user.name = (token.name as string) ?? session.user.name;
       }
       return session;
     },
   },
+
 
   debug: process.env.NODE_ENV === "development",
 };

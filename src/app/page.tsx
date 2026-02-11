@@ -1,3 +1,4 @@
+// src/app/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 
@@ -11,39 +12,7 @@ export default function Home() {
             </div>
 
             <div className="relative z-10 container mx-auto px-4 py-16">
-                <nav className="flex justify-between items-center mb-20">
-                    <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-600 to-violet-600 rounded-lg flex items-center justify-center">
-                            <Image
-                                src="/fox.png"
-                                alt="Kitsune Logo"
-                                width={24}
-                                height={24}
-                                className="w-6 h-6"
-                            />
-                        </div>
-                        <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-violet-400 bg-clip-text text-transparent">
-                            Kitsune
-                        </span>
-                    </div>
-                    
-                    <div className="flex gap-6">
-                        <Link href="/catalog" className="px-6 py-2 rounded-lg border border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 transition-all duration-300"
-                        >каталог</Link>
-                        <Link
-                            href="/auth/login"
-                            className="px-6 py-2 rounded-lg border border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200 transition-all duration-300"
-                        >
-                            Вход
-                        </Link>
-                        <Link
-                            href="/auth/register"
-                            className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-violet-600 text-white hover:from-purple-700 hover:to-violet-700 transition-all duration-300 shadow-lg shadow-purple-500/25"
-                        >
-                            Регистрация
-                        </Link>
-                    </div>
-                </nav>
+                {/* Хедер удален с главной страницы */}
 
                 <main className="max-w-6xl mx-auto">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -140,7 +109,7 @@ export default function Home() {
                     </div>
 
                     <div className="mt-20 grid md:grid-cols-3 gap-8">
-                        {[
+                        {[ // Перечень доступных возможностей
                             { icon: "Умные рекомендации", title: "Умные рекомендации", desc: "Подберем аниме по вашим вкусам" },
                             { icon: "Статистика", title: "Статистика просмотра", desc: "Отслеживайте свой прогресс и достижения" },
                             { icon: "Сообщество", title: "Сообщество", desc: "Общайтесь с другими энтузиастами" }

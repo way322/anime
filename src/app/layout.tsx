@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
+import Header from "./components/Header";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -9,15 +11,15 @@ export const metadata: Metadata = {
   description: "Умная платформа для коллекционирования и обсуждения аниме",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru">
-      <body className={`${inter.className} antialiased`}>
-        {children}
+      <body className={`${inter.className} bg-gray-900 text-white`}>
+        {/* Оборачиваем все в Providers для использования SessionProvider */}
+        <Providers>
+          <Header /> {/* Хедер будет отображаться на всех страницах */}
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   );

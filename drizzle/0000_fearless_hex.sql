@@ -47,6 +47,15 @@ CREATE TABLE "studios" (
 	"country" varchar(50)
 );
 --> statement-breakpoint
+CREATE TABLE "user_anime_status" (
+	"user_id" text NOT NULL,
+	"anime_id" integer NOT NULL,
+	"status" varchar(20) NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "user_anime_status_user_id_anime_id_pk" PRIMARY KEY("user_id","anime_id")
+);
+--> statement-breakpoint
 CREATE TABLE "users" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"username" varchar(50),
@@ -65,4 +74,8 @@ ALTER TABLE "anime_images" ADD CONSTRAINT "anime_images_anime_id_anime_id_fk" FO
 ALTER TABLE "favorites" ADD CONSTRAINT "favorites_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "favorites" ADD CONSTRAINT "favorites_anime_id_anime_id_fk" FOREIGN KEY ("anime_id") REFERENCES "public"."anime"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "ratings" ADD CONSTRAINT "ratings_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "ratings" ADD CONSTRAINT "ratings_anime_id_anime_id_fk" FOREIGN KEY ("anime_id") REFERENCES "public"."anime"("id") ON DELETE no action ON UPDATE no action;
+ALTER TABLE "ratings" ADD CONSTRAINT "ratings_anime_id_anime_id_fk" FOREIGN KEY ("anime_id") REFERENCES "public"."anime"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_anime_status" ADD CONSTRAINT "user_anime_status_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "user_anime_status" ADD CONSTRAINT "user_anime_status_anime_id_anime_id_fk" FOREIGN KEY ("anime_id") REFERENCES "public"."anime"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "favorites_user_anime_unique" ON "favorites" USING btree ("user_id","anime_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "ratings_user_anime_unique" ON "ratings" USING btree ("user_id","anime_id");

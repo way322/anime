@@ -9,12 +9,14 @@ import {
   favorites,
   animeGenres,
   animeImages,
+  userAnimeStatus,
 } from "./schema";
 
 // USERS
 export const userRelations = relations(users, ({ many }) => ({
   ratings: many(ratings),
   favorites: many(favorites),
+  statuses: many(userAnimeStatus),
 }));
 
 // STUDIOS
@@ -28,14 +30,26 @@ export const animeRelations = relations(anime, ({ many, one }) => ({
     fields: [anime.studioId],
     references: [studios.id],
   }),
-  // episodes: removed (эпизоды в iframe-ссылке)
   ratings: many(ratings),
   genres: many(animeGenres),
   images: many(animeImages),
   favorites: many(favorites),
+  userStatuses: many(userAnimeStatus),
 }));
 
 // GENRES
 export const genreRelations = relations(genres, ({ many }) => ({
   anime: many(animeGenres),
+}));
+
+// ✅ USER_ANIME_STATUS
+export const userAnimeStatusRelations = relations(userAnimeStatus, ({ one }) => ({
+  user: one(users, {
+    fields: [userAnimeStatus.userId],
+    references: [users.id],
+  }),
+  anime: one(anime, {
+    fields: [userAnimeStatus.animeId],
+    references: [anime.id],
+  }),
 }));
