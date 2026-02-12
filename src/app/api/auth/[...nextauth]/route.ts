@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/login",
     signOut: "/",
     error: "/auth/error",
-    newUser: "/auth/register"
+    newUser: "/auth/register",
   },
 
   providers: [
@@ -36,24 +36,24 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !user.passwordHash) return null;
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash
-        );
-
+        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
 
+        // ✅ (1) возвращаем role для типизации и консистентности
         return {
           id: String(user.id),
           email: user.email,
           name: user.username,
+          role: (user.role as any) ?? "user",
         };
       },
     }),
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+
     YandexProvider({
       clientId: process.env.YANDEX_CLIENT_ID!,
       clientSecret: process.env.YANDEX_CLIENT_SECRET!,
@@ -71,11 +71,13 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!existingUser) {
+          // ✅ (2) при OAuth можно явно указать role (хотя default = "user")
           await db.insert(users).values({
             email: user.email,
             username: user.name ?? "fox",
             provider: account?.provider || "oauth",
-            providerId: account?.providerAccountId, // это ОК хранить как text
+            providerId: account?.providerAccountId,
+            role: "user",
           });
         }
       }
@@ -91,11 +93,13 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (dbUser) {
-          // ✅ кладём id из нашей БД (обычный serial/int)
           token.id = String(dbUser.id);
-          token.sub = String(dbUser.id); // полезно для совместимости
+          token.sub = String(dbUser.id);
           token.email = dbUser.email;
           token.name = dbUser.username;
+
+          // ✅ (3) добавляем роль в токен
+          token.role = (dbUser.role as any) ?? "user";
         }
       }
 
@@ -104,14 +108,17 @@ export const authOptions: NextAuthOptions = {
 
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;   // ✅ теперь это id из БД
+        session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = (token.name as string) ?? session.user.name;
+
+        // ✅ (4) добавляем роль в session.user
+        session.user.role = (token.role as any) ?? "user";
       }
+
       return session;
     },
   },
-
 
   debug: process.env.NODE_ENV === "development",
 };

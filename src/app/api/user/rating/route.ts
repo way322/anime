@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
-
 import { db } from "../../../../server/db";
 import { ratings } from "../../../../server/db/schema";
 import { and, eq } from "drizzle-orm";
+import { withAuth } from "../../../../server/services/userService";
 
-export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = Number.parseInt(session.user.id, 10);
-  if (!Number.isSafeInteger(userId)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const GET = withAuth(async (req, ctx) => {
+  const userId = ctx.userId;
 
   const { searchParams } = new URL(req.url);
   const animeId = Number(searchParams.get("animeId"));
@@ -27,19 +19,12 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json({ value: row?.value ?? null });
-}
+});
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = Number.parseInt(session.user.id, 10);
-  if (!Number.isSafeInteger(userId)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+export const POST = withAuth(async (req, ctx) => {
+  const userId = ctx.userId;
 
   const body = await req.json().catch(() => null);
-
   const animeId = Number(body?.animeId);
   const value = Number(body?.value);
 
@@ -62,4 +47,4 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ success: true });
-}
+});

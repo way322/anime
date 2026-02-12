@@ -20,8 +20,10 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   provider: varchar("provider", { length: 20 }).notNull().default("local"),
   providerId: varchar("provider_id", { length: 255 }),
+  role: varchar("role", { length: 20 }).notNull().default("user"), // ✅ ДОБАВИЛИ
   createdAt: timestamp("created_at").defaultNow(),
 });
+
 
 // STUDIOS
 export const studios = pgTable("studios", {

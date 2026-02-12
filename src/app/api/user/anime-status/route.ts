@@ -1,24 +1,14 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "../../auth/[...nextauth]/route";
-
 import { db } from "../../../../server/db";
 import { anime, animeImages, ratings, userAnimeStatus } from "../../../../server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
+import { withAuth } from "../../../../server/services/userService";
 
 const ALLOWED = ["watching", "planned", "dropped", "completed"] as const;
 type WatchStatus = (typeof ALLOWED)[number];
 
-export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = Number.parseInt(session.user.id, 10);
-  if (!Number.isSafeInteger(userId)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (Number.isNaN(userId)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const GET = withAuth(async (req, ctx) => {
+  const userId = ctx.userId;
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
@@ -50,18 +40,10 @@ export async function GET(req: Request) {
     .orderBy(desc(userAnimeStatus.updatedAt));
 
   return NextResponse.json({ items: rows });
-}
+});
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = Number.parseInt(session.user.id, 10);
-  if (!Number.isSafeInteger(userId)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (Number.isNaN(userId)) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export const POST = withAuth(async (req, ctx) => {
+  const userId = ctx.userId;
 
   const body = await req.json().catch(() => null);
   const animeId = Number(body?.animeId);
@@ -71,7 +53,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid animeId" }, { status: 400 });
   }
 
-  // удалить из списков
   if (status === null || status === "none") {
     await db
       .delete(userAnimeStatus)
@@ -99,4 +80,4 @@ export async function POST(req: Request) {
     });
 
   return NextResponse.json({ success: true });
-}
+});

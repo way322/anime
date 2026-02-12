@@ -15,6 +15,13 @@
       "when": 1770812427208,
       "tag": "0001_glamorous_forgotten_one",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1770893667251,
+      "tag": "0002_lumpy_sumo",
+      "breakpoints": true
     }
   ]
 }

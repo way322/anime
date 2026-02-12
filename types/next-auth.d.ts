@@ -1,32 +1,38 @@
 // types/next-auth.d.ts
-import NextAuth, { DefaultSession } from "next-auth";
+import type { DefaultSession } from "next-auth";
+
+export type UserRole = "user" | "admin";
 
 declare module "next-auth" {
   /**
-   * Расширяем DefaultSession: добавляем id в session.user
+   * Расширяем DefaultSession: добавляем id и role в session.user
    */
   interface Session extends DefaultSession {
     user: {
       id: string;
+      role: UserRole;
     } & DefaultSession["user"];
   }
 
   /**
-   * При желании можно расширить User (если вы используете `user` где-то)
+   * Расширяем User (что возвращает authorize / приходит в callbacks)
    */
   interface User {
     id: string;
-    // добавьте другие поля, если нужно
+    role: UserRole;
   }
 }
 
 declare module "next-auth/jwt" {
   /**
-   * Расширяем JWT-пayload, чтобы token.id был известен TS
+   * Расширяем JWT payload, чтобы token.id / token.role были известны TS
    */
   interface JWT {
     id?: string;
+    role?: UserRole;
     email?: string | null;
-    // другие поля при необходимости
+    name?: string | null;
   }
 }
+
+export {};
