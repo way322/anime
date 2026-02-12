@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "../../../server/db";
 import { anime, ratings, userAnimeStatus } from "../../../server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import Image from "next/image";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
@@ -24,6 +24,19 @@ export default async function AnimePlayerPage({ params }: PageProps) {
   });
 
   if (!item) notFound();
+
+  // ✅ Средняя оценка и количество оценок
+  const [agg] = await db
+    .select({
+      avgRating: sql<number>`coalesce(avg(${ratings.value}), 0)`.as("avgRating"),
+      ratingsCount: sql<number>`count(${ratings.id})`.as("ratingsCount"),
+    })
+    .from(ratings)
+    .where(eq(ratings.animeId, animeId));
+
+  const avgRating = Number(agg?.avgRating ?? 0);
+  const ratingsCount = Number(agg?.ratingsCount ?? 0);
+
   const session = await getServerSession(authOptions);
   let initialStatus: any = null;
   let initialRating: number | null = null;
@@ -54,7 +67,11 @@ export default async function AnimePlayerPage({ params }: PageProps) {
           </div>
           <div>
             <h1 className="text-2xl text-white font-bold">{item.title}</h1>
-            <p className="text-sm text-gray-300">{item.releaseYear ?? ""}</p>
+
+            {/* ✅ Выводим год + среднюю оценку + количество */}
+            <p className="text-sm text-gray-300">
+              {item.releaseYear ?? "—"} • Средняя оценка: {avgRating.toFixed(1)} ({ratingsCount})
+            </p>
           </div>
         </div>
 
@@ -73,6 +90,7 @@ export default async function AnimePlayerPage({ params }: PageProps) {
         <div className="mt-6 text-gray-300">
           <p>{item.description ?? "Описание отсутствует."}</p>
         </div>
+
         <AnimeUserActions
           animeId={animeId}
           initialStatus={initialStatus}

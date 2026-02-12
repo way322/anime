@@ -1,8 +1,8 @@
 // src/app/api/admin/anime/route.ts
 import { NextResponse } from "next/server";
 import { db } from "../../../../server/db";
-import { anime, animeImages } from "../../../../server/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { anime, animeImages, ratings } from "../../../../server/db/schema";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { withRole } from "../../../../server/services/userService";
 
 type Body = {
@@ -10,7 +10,6 @@ type Body = {
   description?: string | null;
   releaseYear?: number | null;
   status?: string | null;
-  rating?: number | null;
   externalUrl?: string;
   posterUrl?: string | null; // можно null / "" чтобы без постера
 };
@@ -23,15 +22,20 @@ export const GET = withRole("admin", async () => {
       description: anime.description,
       releaseYear: anime.releaseYear,
       status: anime.status,
-      rating: anime.rating,
+
+      // ✅ Средняя оценка из таблицы ratings (0 если нет оценок)
+      rating: sql<number>`coalesce(avg(${ratings.value}), 0)::float`.as("rating"),
+
       externalUrl: anime.externalUrl,
       posterUrl: animeImages.imageUrl,
     })
     .from(anime)
+    .leftJoin(ratings, eq(ratings.animeId, anime.id))
     .leftJoin(
       animeImages,
       and(eq(animeImages.animeId, anime.id), eq(animeImages.isPoster, true))
     )
+    .groupBy(anime.id, animeImages.imageUrl)
     .orderBy(desc(anime.createdAt));
 
   return NextResponse.json({ items });
@@ -54,7 +58,7 @@ export const POST = withRole("admin", async (req) => {
         description: body.description ?? null,
         releaseYear: body.releaseYear ?? null,
         status: (body.status ?? "ongoing") as any,
-        rating: body.rating ?? 0,
+        // ✅ rating НЕ записываем, он считается из ratings
         externalUrl,
       })
       .returning({ id: anime.id });

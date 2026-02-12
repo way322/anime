@@ -10,6 +10,7 @@ type AdminAnimeItem = {
   description: string | null;
   releaseYear: number | null;
   status: string | null;
+  // ✅ теперь это средняя оценка (avg из ratings)
   rating: number | null;
   externalUrl: string;
   posterUrl: string | null;
@@ -20,7 +21,6 @@ type FormState = {
   description: string;
   releaseYear: string;
   status: string;
-  rating: string;
   externalUrl: string;
   posterUrl: string;
 };
@@ -30,7 +30,6 @@ const emptyForm: FormState = {
   description: "",
   releaseYear: "",
   status: "ongoing",
-  rating: "",
   externalUrl: "",
   posterUrl: "",
 };
@@ -74,7 +73,6 @@ export default function AdminClient() {
       description: item.description ?? "",
       releaseYear: item.releaseYear != null ? String(item.releaseYear) : "",
       status: item.status ?? "ongoing",
-      rating: item.rating != null ? String(item.rating) : "",
       externalUrl: item.externalUrl ?? "",
       posterUrl: item.posterUrl ?? "",
     });
@@ -86,7 +84,6 @@ export default function AdminClient() {
       description: form.description.trim() ? form.description.trim() : null,
       releaseYear: form.releaseYear.trim() ? Number(form.releaseYear) : null,
       status: form.status.trim() || "ongoing",
-      rating: form.rating.trim() ? Number(form.rating) : 0,
       externalUrl: form.externalUrl.trim(),
       posterUrl: form.posterUrl.trim() ? form.posterUrl.trim() : null,
     };
@@ -125,6 +122,11 @@ export default function AdminClient() {
     }
     await load();
     if (editingId === id) startCreate();
+  };
+
+  const formatRating = (v: number | null | undefined) => {
+    const n = Number(v ?? 0);
+    return Number.isFinite(n) ? n.toFixed(1) : "0.0";
   };
 
   return (
@@ -200,14 +202,7 @@ export default function AdminClient() {
                 </Field>
               </div>
 
-              <Field label="Рейтинг (число)">
-                <input
-                  value={form.rating}
-                  onChange={(e) => setForm((p) => ({ ...p, rating: e.target.value }))}
-                  inputMode="decimal"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-                />
-              </Field>
+              {/* ✅ Рейтинг убрали из формы: он считается по users ratings */}
 
               <Field label="externalUrl (iframe)">
                 <input
@@ -261,12 +256,7 @@ export default function AdminClient() {
                     >
                       <div className="relative w-full h-40 bg-black/25">
                         {a.posterUrl ? (
-                          <Image
-                            src={a.posterUrl}
-                            alt={a.title}
-                            fill
-                            className="object-cover"
-                          />
+                          <Image src={a.posterUrl} alt={a.title} fill className="object-cover" />
                         ) : (
                           <div className="h-full flex items-center justify-center text-gray-400">
                             No Image
@@ -275,12 +265,13 @@ export default function AdminClient() {
                       </div>
 
                       <div className="p-4">
-                        <div className="text-white font-semibold line-clamp-1">
-                          {a.title}
-                        </div>
+                        <div className="text-white font-semibold line-clamp-1">{a.title}</div>
+
+                        {/* ✅ Тут показываем средний рейтинг */}
                         <div className="text-gray-400 text-sm">
-                          {a.releaseYear ?? "—"} • {a.status ?? "—"} • {a.rating ?? 0}
+                          {a.releaseYear ?? "—"} • {a.status ?? "—"} • {formatRating(a.rating)}
                         </div>
+
                         <div className="text-gray-300 text-sm mt-2 line-clamp-2">
                           {a.description ?? "Описание отсутствует"}
                         </div>
@@ -307,7 +298,8 @@ export default function AdminClient() {
             </div>
 
             <div className="mt-4 text-sm text-gray-400">
-              Подсказка: если постеры с внешних доменов — добавь домен в <code>next.config.ts</code> (images.domains).
+              Подсказка: если постеры с внешних доменов — добавь домен в{" "}
+              <code>next.config.ts</code> (images.domains).
             </div>
           </div>
         </div>

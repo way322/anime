@@ -90,12 +90,10 @@ export default function ProfileClient({
   };
 
   const updateRating = async (animeId: number, value: number | "none") => {
-    if (value === "none") return; 
-
     const res = await fetch("/api/user/rating", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ animeId, value }),
+      body: JSON.stringify({ animeId, value: value === "none" ? null : value }),
     });
 
     if (res.status === 401) {
@@ -103,8 +101,13 @@ export default function ProfileClient({
       return;
     }
 
-    setItems((prev) => prev.map((x) => (x.animeId === animeId ? { ...x, userRating: value } : x)));
+    setItems((prev) =>
+      prev.map((x) =>
+        x.animeId === animeId ? { ...x, userRating: value === "none" ? null : value } : x
+      )
+    );
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 px-4 py-10">
@@ -134,11 +137,10 @@ export default function ProfileClient({
               <button
                 key={t.key}
                 onClick={() => loadTab(t.key)}
-                className={`px-4 py-2 rounded-xl border transition-all ${
-                  tab === t.key
+                className={`px-4 py-2 rounded-xl border transition-all ${tab === t.key
                     ? "bg-white/15 border-white/30 text-white"
                     : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-                }`}
+                  }`}
               >
                 {t.label} <span className="text-gray-400">({tabCounts[t.key]})</span>
               </button>
@@ -208,7 +210,7 @@ export default function ProfileClient({
                         className="bg-black/20 border border-white/10 rounded-xl px-3 py-2 text-white outline-none"
                       >
                         <option value="none">Оценка</option>
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+                        {Array.from({ length: 11 }, (_, i) => i).map((v) => (
                           <option key={v} value={v}>
                             {v}
                           </option>

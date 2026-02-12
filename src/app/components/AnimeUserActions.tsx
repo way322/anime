@@ -51,15 +51,10 @@ export default function AnimeUserActions({
     setSaving(true);
     setRating(next);
 
-    if (next === "none") {
-      setSaving(false);
-      return;
-    }
-
     const res = await fetch("/api/user/rating", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ animeId, value: next }),
+      body: JSON.stringify({ animeId, value: next === "none" ? null : next }),
     });
 
     setSaving(false);
@@ -88,7 +83,7 @@ export default function AnimeUserActions({
       </div>
 
       <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-        <div className="text-sm text-gray-300 mb-2">Моя оценка (1–10)</div>
+        <div className="text-sm text-gray-300 mb-2">Моя оценка (0–10)</div>
         <select
           value={rating}
           onChange={(e) => saveRating(e.target.value === "none" ? "none" : Number(e.target.value))}
@@ -96,7 +91,7 @@ export default function AnimeUserActions({
           className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
         >
           <option value="none">Нет оценки</option>
-          {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
+          {Array.from({ length: 11 }, (_, i) => i).map((v) => (
             <option key={v} value={v}>
               {v}
             </option>
