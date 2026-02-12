@@ -16,24 +16,17 @@ type PageProps = {
 export default async function ProfilePage({ searchParams }: PageProps) {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/auth/login");
-
-  // ✅ Преобразуем userId в число
   const userId = Number.parseInt(session.user.id, 10);
-
-  // ✅ Если id некорректный — считаем, что сессия битая и отправляем на логин
   if (!Number.isSafeInteger(userId)) {
     console.error("Invalid user ID", session.user.id);
     redirect("/auth/login");
   }
 
-  // ✅ В Next.js 16 searchParams = Promise
   const sp = await searchParams;
 
-  // ✅ Устанавливаем таб по умолчанию
   const tab = (ALLOWED.includes(sp.tab as WatchStatus) ? sp.tab : "watching") as WatchStatus;
 
   try {
-    // Кол-во статусов
     const countsRows = await db
       .select({
         status: userAnimeStatus.status,
@@ -48,7 +41,6 @@ export default async function ProfilePage({ searchParams }: PageProps) {
       return acc;
     }, {} as Partial<Record<WatchStatus, number>>);
 
-    // Аниме для текущего таба
     const items = await db
       .select({
         animeId: anime.id,

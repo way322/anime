@@ -12,8 +12,6 @@ export default function Home() {
             </div>
 
             <div className="relative z-10 container mx-auto px-4 py-16">
-                {/* Хедер удален с главной страницы */}
-
                 <main className="max-w-6xl mx-auto">
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div className="space-y-8">
@@ -109,7 +107,7 @@ export default function Home() {
                     </div>
 
                     <div className="mt-20 grid md:grid-cols-3 gap-8">
-                        {[ // Перечень доступных возможностей
+                        {[
                             { icon: "Умные рекомендации", title: "Умные рекомендации", desc: "Подберем аниме по вашим вкусам" },
                             { icon: "Статистика", title: "Статистика просмотра", desc: "Отслеживайте свой прогресс и достижения" },
                             { icon: "Сообщество", title: "Сообщество", desc: "Общайтесь с другими энтузиастами" }

@@ -18,7 +18,6 @@ export class HttpError extends Error {
   }
 }
 
-/** ✅ (3) Создаём контекст запроса: session + userId + role */
 export async function createRequestContext(): Promise<RequestContext> {
   const session = await getServerSession(authOptions);
 
@@ -32,7 +31,6 @@ export async function createRequestContext(): Promise<RequestContext> {
   return { session, userId: safeUserId, role };
 }
 
-/** ✅ (4a) Макрос проверки авторизации */
 export function requireAuth(ctx: RequestContext): RequestContext & {
   session: Session;
   userId: number;
@@ -41,11 +39,9 @@ export function requireAuth(ctx: RequestContext): RequestContext & {
   if (!ctx.session?.user?.id || ctx.userId == null) {
     throw new HttpError(401, "Unauthorized");
   }
-  // если роль почему-то не пришла — считаем user
   return { ...ctx, role: (ctx.role ?? "user") as UserRole, session: ctx.session, userId: ctx.userId };
 }
 
-/** ✅ (4b) Макрос проверки роли */
 export function requireRole(
   ctx: RequestContext,
   roles: UserRole | UserRole[]
@@ -60,7 +56,6 @@ export function requireRole(
   return authed;
 }
 
-/** Утилита: превращаем HttpError в JSON-ответ */
 export function httpErrorToResponse(err: unknown) {
   if (err instanceof HttpError) {
     return NextResponse.json({ error: err.message }, { status: err.status });
@@ -68,7 +63,6 @@ export function httpErrorToResponse(err: unknown) {
   throw err;
 }
 
-/** ✅ “Макрос”-обёртка: добавляет ctx в обработчик */
 export function withContext(
   handler: (req: Request, ctx: RequestContext) => Promise<Response>
 ) {
@@ -82,14 +76,12 @@ export function withContext(
   };
 }
 
-/** ✅ “Макрос”-обёртка: требует авторизацию */
 export function withAuth(
   handler: (req: Request, ctx: ReturnType<typeof requireAuth>) => Promise<Response>
 ) {
   return withContext(async (req, ctx) => handler(req, requireAuth(ctx)));
 }
 
-/** ✅ “Макрос”-обёртка: требует роль */
 export function withRole(
   roles: UserRole | UserRole[],
   handler: (req: Request, ctx: ReturnType<typeof requireRole>) => Promise<Response>

@@ -15,9 +15,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ru">
       <body className={`${inter.className} bg-gray-900 text-white`}>
-        {/* Оборачиваем все в Providers для использования SessionProvider */}
         <Providers>
-          <Header /> {/* Хедер будет отображаться на всех страницах */}
+          <Header /> 
           <main>{children}</main>
         </Providers>
       </body>

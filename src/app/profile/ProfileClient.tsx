@@ -80,7 +80,6 @@ export default function ProfileClient({
       return;
     }
 
-    // если поменяли статус — в текущей вкладке может исчезнуть
     if (nextStatus === "none" || nextStatus !== tab) {
       setItems((prev) => prev.filter((x) => x.animeId !== animeId));
     } else {
@@ -91,7 +90,7 @@ export default function ProfileClient({
   };
 
   const updateRating = async (animeId: number, value: number | "none") => {
-    if (value === "none") return; // если хочешь удалять — добавим DELETE
+    if (value === "none") return; 
 
     const res = await fetch("/api/user/rating", {
       method: "POST",

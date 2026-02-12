@@ -24,8 +24,6 @@ export default async function AnimePlayerPage({ params }: PageProps) {
   });
 
   if (!item) notFound();
-
-  // ✅ если пользователь залогинен — достанем его статус и оценку
   const session = await getServerSession(authOptions);
   let initialStatus: any = null;
   let initialRating: number | null = null;
@@ -75,8 +73,6 @@ export default async function AnimePlayerPage({ params }: PageProps) {
         <div className="mt-6 text-gray-300">
           <p>{item.description ?? "Описание отсутствует."}</p>
         </div>
-
-        {/* ✅ списки и оценка (только для авторизованных) */}
         <AnimeUserActions
           animeId={animeId}
           initialStatus={initialStatus}

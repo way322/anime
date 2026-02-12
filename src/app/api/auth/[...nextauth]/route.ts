@@ -38,8 +38,6 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
-
-        // ✅ (1) возвращаем role для типизации и консистентности
         return {
           id: String(user.id),
           email: user.email,
@@ -63,15 +61,12 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (!user.email) return false;
-
-      // создаём пользователя в БД при OAuth, если его нет
       if (account?.provider !== "credentials") {
         const existingUser = await db.query.users.findFirst({
           where: eq(users.email, user.email),
         });
 
         if (!existingUser) {
-          // ✅ (2) при OAuth можно явно указать role (хотя default = "user")
           await db.insert(users).values({
             email: user.email,
             username: user.name ?? "fox",
@@ -86,7 +81,6 @@ export const authOptions: NextAuthOptions = {
     },
 
     async jwt({ token, user, account }) {
-      // при первом логине (и credentials, и oauth) у нас есть user/account
       if (account && user?.email) {
         const dbUser = await db.query.users.findFirst({
           where: eq(users.email, user.email),
@@ -97,8 +91,6 @@ export const authOptions: NextAuthOptions = {
           token.sub = String(dbUser.id);
           token.email = dbUser.email;
           token.name = dbUser.username;
-
-          // ✅ (3) добавляем роль в токен
           token.role = (dbUser.role as any) ?? "user";
         }
       }
@@ -111,8 +103,6 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.email = token.email as string;
         session.user.name = (token.name as string) ?? session.user.name;
-
-        // ✅ (4) добавляем роль в session.user
         session.user.role = (token.role as any) ?? "user";
       }
 

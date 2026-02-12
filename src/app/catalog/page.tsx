@@ -7,8 +7,6 @@ import { eq } from "drizzle-orm";
 
 export default async function CatalogPage() {
   const items = await db.query.anime.findMany();
-
-  // для простоты получаем постер для каждого аниме (можно оптимизировать join'ом)
   const itemsWithPoster = await Promise.all(
     items.map(async (a) => {
       const poster = await db.query.animeImages.findFirst({

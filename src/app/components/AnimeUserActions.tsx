@@ -52,7 +52,6 @@ export default function AnimeUserActions({
     setRating(next);
 
     if (next === "none") {
-      // Если хочешь удаление оценки — можно сделать отдельный DELETE-роут.
       setSaving(false);
       return;
     }
