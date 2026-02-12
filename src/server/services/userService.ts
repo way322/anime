@@ -63,28 +63,40 @@ export function httpErrorToResponse(err: unknown) {
   throw err;
 }
 
-export function withContext(
-  handler: (req: Request, ctx: RequestContext) => Promise<Response>
+export function withContext<RouteCtx = unknown>(
+  handler: (req: Request, ctx: RequestContext, routeCtx?: RouteCtx) => Promise<Response>
 ) {
-  return async (req: Request) => {
+  return async (req: Request, routeCtx?: RouteCtx) => {
     const ctx = await createRequestContext();
     try {
-      return await handler(req, ctx);
+      return await handler(req, ctx, routeCtx);
     } catch (err) {
       return httpErrorToResponse(err);
     }
   };
 }
 
-export function withAuth(
-  handler: (req: Request, ctx: ReturnType<typeof requireAuth>) => Promise<Response>
+export function withAuth<RouteCtx = unknown>(
+  handler: (
+    req: Request,
+    ctx: ReturnType<typeof requireAuth>,
+    routeCtx?: RouteCtx
+  ) => Promise<Response>
 ) {
-  return withContext(async (req, ctx) => handler(req, requireAuth(ctx)));
+  return withContext<RouteCtx>((req, ctx, routeCtx) =>
+    handler(req, requireAuth(ctx), routeCtx)
+  );
 }
 
-export function withRole(
+export function withRole<RouteCtx = unknown>(
   roles: UserRole | UserRole[],
-  handler: (req: Request, ctx: ReturnType<typeof requireRole>) => Promise<Response>
+  handler: (
+    req: Request,
+    ctx: ReturnType<typeof requireRole>,
+    routeCtx?: RouteCtx
+  ) => Promise<Response>
 ) {
-  return withContext(async (req, ctx) => handler(req, requireRole(ctx, roles)));
+  return withContext<RouteCtx>((req, ctx, routeCtx) =>
+    handler(req, requireRole(ctx, roles), routeCtx)
+  );
 }

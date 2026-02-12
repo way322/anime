@@ -1,8 +1,14 @@
 // src/app/components/Header.tsx
 import Link from "next/link";
 import Image from "next/image";
+import { getServerSession } from "next-auth";
+import { authOptions } from "../../app/api/auth/[...nextauth]/route";
 
-export default function Header() {
+export default async function Header() {
+  const session = await getServerSession(authOptions);
+  const isAuthed = !!session;
+  const isAdmin = session?.user?.role === "admin";
+
   return (
     <header className="bg-transparent py-4 px-6 fixed top-0 left-0 w-full z-50">
       <div className="max-w-6xl mx-auto flex justify-between items-center">
@@ -12,16 +18,43 @@ export default function Header() {
           </div>
           <span className="text-2xl font-bold text-white">Kitsune</span>
         </Link>
+
         <nav className="flex space-x-6">
           <Link href="/catalog" className="text-white hover:text-purple-400 transition-colors">
             Каталог
           </Link>
-          <Link href="/auth/login" className="text-white hover:text-purple-400 transition-colors">
-            Вход
-          </Link>
-          <Link href="/auth/register" className="text-white hover:text-purple-400 transition-colors">
-            Регистрация
-          </Link>
+
+          {isAdmin && (
+            <Link href="/admin" className="text-white hover:text-purple-400 transition-colors">
+              Админка
+            </Link>
+          )}
+
+          {isAuthed ? (
+            <>
+              <Link href="/profile" className="text-white hover:text-purple-400 transition-colors">
+                Профиль
+              </Link>
+              <Link
+                href="/api/auth/signout?callbackUrl=/"
+                className="text-white hover:text-purple-400 transition-colors"
+              >
+                Выход
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link href="/auth/login" className="text-white hover:text-purple-400 transition-colors">
+                Вход
+              </Link>
+              <Link
+                href="/auth/register"
+                className="text-white hover:text-purple-400 transition-colors"
+              >
+                Регистрация
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
