@@ -27,7 +27,6 @@ export const POST = withAuth(async (req, ctx) => {
   const body = await req.json().catch(() => null);
   const animeId = Number(body?.animeId);
 
-  // value может быть числом или null (для удаления)
   const rawValue = body?.value;
   const value = rawValue === null || rawValue === undefined ? null : Number(rawValue);
 
@@ -35,7 +34,7 @@ export const POST = withAuth(async (req, ctx) => {
     return NextResponse.json({ error: "Invalid animeId" }, { status: 400 });
   }
 
-  // Удаление оценки
+  // удалить оценку
   if (value === null) {
     await db
       .delete(ratings)
@@ -44,9 +43,8 @@ export const POST = withAuth(async (req, ctx) => {
     return NextResponse.json({ success: true });
   }
 
-  // Теперь 0..10
-  if (!Number.isInteger(value) || value < 0 || value > 10) {
-    return NextResponse.json({ error: "Rating must be 0..10" }, { status: 400 });
+  if (!Number.isInteger(value) || value < 1 || value > 10) {
+    return NextResponse.json({ error: "Rating must be 1..10" }, { status: 400 });
   }
 
   const existing = await db.query.ratings.findFirst({

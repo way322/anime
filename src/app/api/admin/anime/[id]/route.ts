@@ -6,13 +6,13 @@ import {
   animeGenres,
   animeImages,
   favorites,
+  genres,
   ratings,
   userAnimeStatus,
 } from "../../../../../server/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { withRole } from "../../../../../server/services/userService";
 
-// ✅ В Next 16 params = Promise
 type RouteCtx = { params: Promise<{ id: string }> };
 
 type PatchBody = {
@@ -23,11 +23,20 @@ type PatchBody = {
   rating?: number | null;
   externalUrl?: string;
   posterUrl?: string | null;
+  genres?: string[]; // ✅
 };
+
+function normalizeGenreNames(list: unknown): string[] {
+  if (!Array.isArray(list)) return [];
+  const names = list
+    .map((x) => String(x ?? "").trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  return Array.from(new Set(names));
+}
 
 export const PATCH = withRole<RouteCtx>("admin", async (req, _ctx, routeCtx) => {
   const params = routeCtx ? await Promise.resolve((routeCtx as any).params) : null;
-
   const animeId = Number.parseInt(params?.id ?? "", 10);
 
   if (!Number.isSafeInteger(animeId)) {
@@ -45,6 +54,8 @@ export const PATCH = withRole<RouteCtx>("admin", async (req, _ctx, routeCtx) => 
   if (nextExternalUrl !== undefined && !nextExternalUrl) {
     return NextResponse.json({ error: "externalUrl cannot be empty" }, { status: 400 });
   }
+
+  const genreNames = body.genres !== undefined ? normalizeGenreNames(body.genres) : null;
 
   await db.transaction(async (tx) => {
     await tx
@@ -72,10 +83,7 @@ export const PATCH = withRole<RouteCtx>("admin", async (req, _ctx, routeCtx) => 
         });
 
         if (existing) {
-          await tx
-            .update(animeImages)
-            .set({ imageUrl: posterUrl })
-            .where(eq(animeImages.id, existing.id));
+          await tx.update(animeImages).set({ imageUrl: posterUrl }).where(eq(animeImages.id, existing.id));
         } else {
           await tx.insert(animeImages).values({
             animeId,
@@ -85,13 +93,38 @@ export const PATCH = withRole<RouteCtx>("admin", async (req, _ctx, routeCtx) => 
         }
       }
     }
+
+    if (genreNames !== null) {
+      await tx.delete(animeGenres).where(eq(animeGenres.animeId, animeId));
+
+      if (genreNames.length) {
+        await tx
+          .insert(genres)
+          .values(genreNames.map((name) => ({ name })))
+          .onConflictDoNothing();
+
+        const rows = await tx
+          .select({ id: genres.id, name: genres.name })
+          .from(genres)
+          .where(inArray(genres.name, genreNames));
+
+        if (rows.length) {
+          await tx.insert(animeGenres).values(
+            rows.map((g) => ({
+              animeId,
+              genreId: g.id,
+            }))
+          );
+        }
+      }
+    }
   });
 
   return NextResponse.json({ ok: true });
 });
 
 export const DELETE = withRole<RouteCtx>("admin", async (_req, _ctx, routeCtx) => {
-  const params = routeCtx ? await routeCtx.params : null; // ✅ await
+  const params = routeCtx ? await routeCtx.params : null;
   const animeId = Number.parseInt(params?.id ?? "", 10);
 
   if (!Number.isSafeInteger(animeId)) {

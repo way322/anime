@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "../../../../server/db";
-import { anime, animeImages, ratings, userAnimeStatus } from "../../../../server/db/schema";
+import { anime, animeImages, favorites, ratings, userAnimeStatus } from "../../../../server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { withAuth } from "../../../../server/services/userService";
 
@@ -31,15 +31,22 @@ export const GET = withAuth(async (req, ctx) => {
       description: anime.description,
       posterUrl: animeImages.imageUrl,
       userRating: ratings.value,
+      loved: favorites.userId,
     })
     .from(userAnimeStatus)
     .innerJoin(anime, eq(userAnimeStatus.animeId, anime.id))
     .leftJoin(animeImages, and(eq(animeImages.animeId, anime.id), eq(animeImages.isPoster, true)))
     .leftJoin(ratings, and(eq(ratings.animeId, anime.id), eq(ratings.userId, userId)))
+    .leftJoin(favorites, and(eq(favorites.animeId, anime.id), eq(favorites.userId, userId)))
     .where(where)
     .orderBy(desc(userAnimeStatus.updatedAt));
 
-  return NextResponse.json({ items: rows });
+  const items = rows.map((r) => ({
+    ...r,
+    loved: Boolean(r.loved),
+  }));
+
+  return NextResponse.json({ items });
 });
 
 export const POST = withAuth(async (req, ctx) => {
