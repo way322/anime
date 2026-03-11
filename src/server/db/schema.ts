@@ -7,7 +7,6 @@ import {
   integer,
   boolean,
   timestamp,
-  real,
   primaryKey,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -46,7 +45,6 @@ export const anime = pgTable("anime", {
   studioId: integer("studio_id").references(() => studios.id),
   releaseYear: integer("release_year"),
   status: varchar("status", { length: 20 }).default("ongoing"),
-  rating: real("rating").default(0),
   externalUrl: text("external_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });

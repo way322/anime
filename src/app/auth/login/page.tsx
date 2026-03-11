@@ -5,55 +5,59 @@ import Image from "next/image";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden bg-[#07070d]">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow"></div>
-        <div className="absolute top-40 -left-20 w-80 h-80 bg-violet-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow animation-delay-2000"></div>
-        <div className="absolute -bottom-40 left-40 w-80 h-80 bg-fuchsia-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow animation-delay-4000"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.20),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(217,70,239,0.14),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:42px_42px] opacity-[0.12]" />
+        <div className="absolute -top-24 left-[8%] h-72 w-72 rounded-full bg-purple-600/20 blur-3xl" />
+        <div className="absolute top-32 right-[6%] h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
       </div>
 
-      <div className="relative z-10 w-full max-w-md">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl p-8 mx-4">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-gradient-to-r from-purple-600 to-violet-600 rounded-2xl shadow-lg">
-              <Image
-                src="/fox.png"
-                alt="Kitsune"
-                width={32}
-                height={32}
-                className="w-8 h-8"
-              />
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 pt-28 pb-10">
+        <div className="w-full max-w-md">
+          <div className="rounded-[32px] border border-white/15 bg-white/8 p-8 shadow-2xl backdrop-blur-xl">
+            <div className="mb-8 text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-purple-200">
+                Добро пожаловать обратно
+              </div>
+
+              <div className="mx-auto mb-5 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg shadow-purple-500/25">
+                <Image src="/fox.png" alt="Kitsune" width={32} height={32} className="w-8 h-8" />
+              </div>
+
+              <h1 className="text-3xl font-bold text-white mb-2">Вход</h1>
+              <p className="text-gray-300">Войдите в свой аккаунт Kitsune</p>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Вход</h1>
-            <p className="text-gray-300">Войдите в свой аккаунт</p>
-          </div>
 
-          <LoginForm />
+            <LoginForm />
 
-          <div className="my-6 flex items-center">
-            <div className="flex-1 h-px bg-white/20"></div>
-            <span className="px-4 text-gray-400 text-sm">или</span>
-            <div className="flex-1 h-px bg-white/20"></div>
-          </div>
+            <div className="my-6 flex items-center">
+              <div className="h-px flex-1 bg-white/15" />
+              <span className="px-4 text-sm text-gray-400">или</span>
+              <div className="h-px flex-1 bg-white/15" />
+            </div>
 
-          <SocialButtons isLogin={true} />
+            <SocialButtons isLogin={true} />
 
-          <div className="mt-8 text-center">
-            <p className="text-gray-400">
-              Нет аккаунта?{" "}
+            <div className="mt-8 text-center">
+              <p className="text-gray-400">
+                Нет аккаунта?{" "}
+                <Link
+                  href="/auth/register"
+                  className="font-semibold text-purple-300 transition-colors hover:text-white"
+                >
+                  Зарегистрироваться
+                </Link>
+              </p>
+
               <Link
-                href="/auth/register"
-                className="text-purple-300 hover:text-white font-semibold transition-colors duration-300"
+                href="/"
+                className="mt-4 inline-block text-gray-500 transition-colors hover:text-white"
               >
-                Зарегистрироваться
+                ← Вернуться на главную
               </Link>
-            </p>
-            <Link
-              href="/"
-              className="inline-block mt-4 text-gray-500 hover:text-white transition-colors duration-300"
-            >
-              ← Вернуться на главную
-            </Link>
+            </div>
           </div>
         </div>
       </div>

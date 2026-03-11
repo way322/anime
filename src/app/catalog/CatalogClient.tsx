@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import SelectMenu, { type SelectOption } from "../components/SelectMenu";
 
 type SortKey = "new" | "rating" | "year";
 type StatusKey = "all" | "ongoing" | "completed" | "hiatus";
@@ -26,6 +27,19 @@ const STATUS_LABELS: Record<Exclude<StatusKey, "all">, string> = {
     completed: "Завершено",
     hiatus: "Пауза",
 };
+
+const STATUS_OPTIONS: SelectOption[] = [
+    { value: "all", label: "Все" },
+    { value: "ongoing", label: "В процессе" },
+    { value: "completed", label: "Завершено" },
+    { value: "hiatus", label: "Пауза" },
+];
+
+const SORT_OPTIONS: SelectOption[] = [
+    { value: "new", label: "Новые" },
+    { value: "rating", label: "По рейтингу" },
+    { value: "year", label: "По году" },
+];
 
 function statusToRu(v: string | null | undefined) {
     if (!v) return "—";
@@ -65,7 +79,9 @@ export default function CatalogClient(props: {
     );
     const [yearFrom, setYearFrom] = useState(props.initialFilters.yearFrom ?? "");
     const [yearTo, setYearTo] = useState(props.initialFilters.yearTo ?? "");
-    const [selectedGenres, setSelectedGenres] = useState<string[]>(props.initialFilters.genres ?? []);
+    const [selectedGenres, setSelectedGenres] = useState<string[]>(
+        props.initialFilters.genres ?? []
+    );
 
     const [items, setItems] = useState<CatalogItem[]>([]);
     const [loadingFirst, setLoadingFirst] = useState(true);
@@ -114,7 +130,7 @@ export default function CatalogClient(props: {
             router.push(buildUrl());
         }, 250);
         return () => clearTimeout(t);
-    }, [filtersKey]);
+    }, [filtersKey, router]);
 
     const fetchPage = async (offset: number) => {
         const sp = new URLSearchParams();
@@ -213,222 +229,279 @@ export default function CatalogClient(props: {
     };
 
     const gridClass =
-        "grid grid-cols-1 gap-6 " + (panelOpen ? "md:grid-cols-[280px_1fr]" : "md:grid-cols-1");
+        "grid grid-cols-1 gap-6 " + (panelOpen ? "md:grid-cols-[300px_1fr]" : "md:grid-cols-1");
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 px-4 pt-28 pb-12">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between gap-3 mb-6">
-                    <h1 className="text-4xl font-bold text-white">Каталог аниме</h1>
-                </div>
+        <div className="relative min-h-screen overflow-hidden bg-[#07070d]">
+            <div className="absolute inset-0">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.20),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(217,70,239,0.14),transparent_30%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:42px_42px] opacity-[0.12]" />
+                <div className="absolute -top-24 left-[8%] h-72 w-72 rounded-full bg-purple-600/20 blur-3xl" />
+                <div className="absolute top-32 right-[6%] h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
+                <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
+            </div>
 
-                <div className={gridClass}>
-                    <aside className={`${panelOpen ? "block" : "hidden"} bg-white/5 border border-white/10 rounded-2xl`}>
-                        <div className="sticky top-24">
-                            <div className="p-4 border-b border-white/10 flex items-center justify-between">
-                                <div className="text-white font-semibold">Фильтры</div>
-                                <button
-                                    type="button"
-                                    onClick={() => setPanelOpen(false)}
-                                    className="text-gray-300 hover:text-white"
-                                    title="Скрыть"
-                                >
-                                    ✕
-                                </button>
+            <div className="relative z-10 px-4 pt-28 pb-12">
+                <div className="mx-auto max-w-7xl">
+                    <div className="mb-8 flex items-center justify-between gap-3">
+                        <div>
+                            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs text-purple-200 backdrop-blur-md">
+                                Каталог аниме
                             </div>
+                            <h1 className="mt-4 text-4xl font-bold text-white">Каталог аниме</h1>
+                            <p className="mt-2 text-gray-300">
+                                Подбирай тайтлы по статусу, жанрам, году и рейтингу.
+                            </p>
+                        </div>
 
-                            <div className="p-4 space-y-4 max-h-[calc(100vh-120px)] overflow-auto">
-                                <div>
-                                    <div className="text-xs text-gray-400 mb-1">Статус</div>
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value as StatusKey)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-                                    >
-                                        <option value="all">Все</option>
-                                        <option value="ongoing">В процессе</option>
-                                        <option value="completed">Завершено</option>
-                                        <option value="hiatus">Пауза</option>
-                                    </select>
-                                </div>
+                        {!panelOpen && (
+                            <button
+                                type="button"
+                                onClick={() => setPanelOpen(true)}
+                                className="rounded-2xl border border-white/15 bg-white/8 px-4 py-2.5 text-white transition hover:bg-white/12"
+                            >
+                                Открыть фильтры
+                            </button>
+                        )}
+                    </div>
 
-                                <div>
-                                    <div className="text-xs text-gray-400 mb-1">Сортировка</div>
-                                    <select
-                                        value={sort}
-                                        onChange={(e) => setSort(e.target.value as SortKey)}
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-                                    >
-                                        <option value="new">Новые</option>
-                                        <option value="rating">По рейтингу</option>
-                                        <option value="year">По году</option>
-                                    </select>
-
-                                    {sort === "rating" && (
-                                        <div className="mt-2 grid grid-cols-2 gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setRatingOrder("desc")}
-                                                className={`py-2 rounded-xl border ${ratingOrder === "desc"
-                                                        ? "bg-white/15 border-white/30 text-white"
-                                                        : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-                                                    }`}
-                                            >
-                                                Убыв.
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setRatingOrder("asc")}
-                                                className={`py-2 rounded-xl border ${ratingOrder === "asc"
-                                                        ? "bg-white/15 border-white/30 text-white"
-                                                        : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-                                                    }`}
-                                            >
-                                                Возр.
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-3">
+                    <div className={gridClass}>
+                        <aside
+                            className={`${panelOpen ? "block" : "hidden"
+                                } rounded-[30px] border border-white/12 bg-white/[0.07] shadow-2xl backdrop-blur-xl`}
+                        >
+                            <div className="sticky top-24">
+                                <div className="flex items-center justify-between border-b border-white/10 p-4">
                                     <div>
-                                        <div className="text-xs text-gray-400 mb-1">Год от</div>
-                                        <input
-                                            value={yearFrom}
-                                            onChange={(e) => setYearFrom(e.target.value)}
-                                            inputMode="numeric"
-                                            placeholder="2010"
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-                                        />
+                                        <div className="text-lg font-semibold text-white">Фильтры</div>
+                                        <div className="mt-1 text-xs text-gray-400">Настрой отображение каталога</div>
                                     </div>
-                                    <div>
-                                        <div className="text-xs text-gray-400 mb-1">Год до</div>
-                                        <input
-                                            value={yearTo}
-                                            onChange={(e) => setYearTo(e.target.value)}
-                                            inputMode="numeric"
-                                            placeholder="2025"
-                                            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-                                        />
-                                    </div>
-                                </div>
 
-                                <div>
                                     <button
                                         type="button"
-                                        onClick={() => setGenresOpen((p) => !p)}
-                                        className="w-full flex items-center justify-between bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-left"
+                                        onClick={() => setPanelOpen(false)}
+                                        className="text-gray-300 transition hover:text-white"
+                                        title="Скрыть"
                                     >
-                                        <div className="text-sm text-gray-200">
-                                            Жанры{" "}
-                                            {selectedGenres.length > 0 && (
-                                                <span className="text-gray-400">({selectedGenres.length})</span>
-                                            )}
-                                        </div>
-                                        <span className="text-gray-300">{genresOpen ? "▾" : "▸"}</span>
+                                        ✕
                                     </button>
-
-                                    {genresOpen && (
-                                        <div className="mt-2 bg-black/15 border border-white/10 rounded-xl p-3 max-h-64 overflow-auto space-y-2">
-                                            {props.allGenres.length === 0 ? (
-                                                <div className="text-sm text-gray-400">Жанров пока нет.</div>
-                                            ) : (
-                                                props.allGenres.map((g) => {
-                                                    const checked = selectedGenres.includes(g);
-                                                    return (
-                                                        <label key={g} className="flex items-center gap-2 text-sm text-gray-200 cursor-pointer select-none">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={checked}
-                                                                onChange={() => toggleGenre(g)}
-                                                                className="accent-purple-500"
-                                                            />
-                                                            <span className="truncate">{g}</span>
-                                                        </label>
-                                                    );
-                                                })
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={reset}
-                                    className="w-full py-3 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/15"
-                                >
-                                    Сбросить
-                                </button>
-                            </div>
-                        </div>
-                    </aside>
+                                <div className="max-h-[calc(100vh-120px)] space-y-4 overflow-auto p-4">
+                                    <div>
+                                        <div className="mb-1 text-xs text-gray-400">Статус</div>
+                                        <SelectMenu
+                                            value={status}
+                                            options={STATUS_OPTIONS}
+                                            onChange={(v) => setStatus(v as StatusKey)}
+                                        />
+                                    </div>
 
-                    <section>
-                        {!panelOpen && (
-                            <div className="mb-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setPanelOpen(true)}
-                                    className="px-4 py-2 rounded-xl bg-white/10 border border-white/15 text-white hover:bg-white/15"
-                                >
-                                    Открыть фильтры
-                                </button>
-                            </div>
-                        )}
+                                    <div>
+                                        <div className="mb-1 text-xs text-gray-400">Сортировка</div>
+                                        <SelectMenu
+                                            value={sort}
+                                            options={SORT_OPTIONS}
+                                            onChange={(v) => setSort(v as SortKey)}
+                                        />
 
-                        {loadingFirst ? (
-                            <div className="text-gray-300 bg-white/5 border border-white/10 rounded-2xl p-6">
-                                Загрузка…
-                            </div>
-                        ) : items.length === 0 ? (
-                            <div className="text-gray-300 bg-white/5 border border-white/10 rounded-2xl p-6">
-                                Ничего не найдено.
-                            </div>
-                        ) : (
-                            <>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                                    {items.map((a) => (
-                                        <Link
-                                            key={a.id}
-                                            href={`/anime/${a.id}`}
-                                            className="group block bg-white/5 rounded-2xl p-4 border border-white/10 hover:border-purple-500/30 transition"
+                                        {sort === "rating" && (
+                                            <div className="mt-2 grid grid-cols-2 gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRatingOrder("desc")}
+                                                    className={`rounded-2xl border py-2 transition ${ratingOrder === "desc"
+                                                            ? "border-white/30 bg-white/15 text-white"
+                                                            : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                                                        }`}
+                                                >
+                                                    Убыв.
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setRatingOrder("asc")}
+                                                    className={`rounded-2xl border py-2 transition ${ratingOrder === "asc"
+                                                            ? "border-white/30 bg-white/15 text-white"
+                                                            : "border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                                                        }`}
+                                                >
+                                                    Возр.
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <div className="mb-1 text-xs text-gray-400">Год от</div>
+                                            <input
+                                                value={yearFrom}
+                                                onChange={(e) => setYearFrom(e.target.value)}
+                                                inputMode="numeric"
+                                                placeholder="2010"
+                                                className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-purple-400/50"
+                                            />
+                                        </div>
+                                        <div>
+                                            <div className="mb-1 text-xs text-gray-400">Год до</div>
+                                            <input
+                                                value={yearTo}
+                                                onChange={(e) => setYearTo(e.target.value)}
+                                                inputMode="numeric"
+                                                placeholder="2025"
+                                                className="w-full rounded-2xl border border-white/10 bg-black/20 px-4 py-3 text-white outline-none transition focus:border-purple-400/50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setGenresOpen((p) => !p)}
+                                            className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-left transition hover:bg-white/8"
                                         >
-                                            <div className="relative w-full h-48 rounded-xl overflow-hidden mb-4 bg-black/20">
-                                                {a.posterUrl ? (
-                                                    <Image src={a.posterUrl} alt={a.title} fill className="object-cover" />
-                                                ) : (
-                                                    <div className="flex items-center justify-center h-full text-gray-400">
-                                                        No Image
-                                                    </div>
+                                            <div className="text-sm text-gray-200">
+                                                Жанры{" "}
+                                                {selectedGenres.length > 0 && (
+                                                    <span className="text-gray-400">({selectedGenres.length})</span>
                                                 )}
                                             </div>
+                                            <span className="text-gray-300">{genresOpen ? "▾" : "▸"}</span>
+                                        </button>
 
-                                            <h3 className="text-lg font-semibold text-white mb-1 line-clamp-1">{a.title}</h3>
-                                            <p className="text-sm text-gray-300 line-clamp-3">
-                                                {a.description ?? "Описание отсутствует"}
-                                            </p>
-
-                                            <div className="mt-4 text-sm text-gray-400 flex flex-wrap gap-x-2 gap-y-1">
-                                                <span>{a.releaseYear ?? "—"}</span>
-                                                <span>•</span>
-                                                <span>{statusToRu(a.status)}</span>
-                                                <span>•</span>
-                                                <span>
-                                                    {formatRating(a.rating)}{" "}
-                                                    <span className="text-gray-500">({a.ratingsCount})</span>
-                                                </span>
+                                        {genresOpen && (
+                                            <div className="custom-dropdown-scroll mt-2 max-h-64 overflow-auto rounded-2xl border border-white/10 bg-black/15 p-3">
+                                                {props.allGenres.length === 0 ? (
+                                                    <div className="text-sm text-gray-400">Жанров пока нет.</div>
+                                                ) : (
+                                                    props.allGenres.map((g) => {
+                                                        const checked = selectedGenres.includes(g);
+                                                        return (
+                                                            <label
+                                                                key={g}
+                                                                className="flex cursor-pointer select-none items-center gap-2 text-sm text-gray-200"
+                                                            >
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={checked}
+                                                                    onChange={() => toggleGenre(g)}
+                                                                    className="accent-purple-500"
+                                                                />
+                                                                <span className="truncate">{g}</span>
+                                                            </label>
+                                                        );
+                                                    })
+                                                )}
                                             </div>
-                                        </Link>
-                                    ))}
+                                        )}
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={reset}
+                                        className="w-full rounded-2xl border border-white/15 bg-white/10 py-3 text-white transition hover:bg-white/15"
+                                    >
+                                        Сбросить
+                                    </button>
                                 </div>
+                            </div>
+                        </aside>
 
-                                <div ref={sentinelRef} className="h-10" />
+                        <section>
+                            {loadingFirst ? (
+                                <div className="rounded-[28px] border border-white/12 bg-white/[0.06] p-6 text-gray-300 shadow-xl backdrop-blur-xl">
+                                    Загрузка…
+                                </div>
+                            ) : items.length === 0 ? (
+                                <div className="rounded-[28px] border border-white/12 bg-white/[0.06] p-6 text-gray-300 shadow-xl backdrop-blur-xl">
+                                    Ничего не найдено.
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-sm">
+                                        <div className="text-sm text-gray-300">
+                                            Найдено тайтлов: <span className="font-semibold text-white">{items.length}</span>
+                                            {loadingMore && <span className="ml-2 text-gray-400">• Подгружаю ещё…</span>}
+                                        </div>
 
-                                {loadingMore && <div className="mt-4 text-gray-300">Подгружаю ещё…</div>}
-                                {!hasMore && <div className="mt-6 text-sm text-gray-400">Больше ничего нет.</div>}
-                            </>
-                        )}
-                    </section>
+                                        <div className="flex flex-wrap gap-2">
+                                            {status !== "all" && (
+                                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-200">
+                                                    {statusToRu(status)}
+                                                </span>
+                                            )}
+                                            {sort === "rating" && (
+                                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-200">
+                                                    Рейтинг: {ratingOrder === "desc" ? "убыв." : "возр."}
+                                                </span>
+                                            )}
+                                            {sort === "year" && (
+                                                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-200">
+                                                    По году
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                                        {items.map((a) => (
+                                            <Link
+                                                key={a.id}
+                                                href={`/anime/${a.id}`}
+                                                className="group block rounded-[26px] border border-white/12 bg-white/[0.06] p-4 shadow-xl backdrop-blur-xl transition hover:border-purple-500/30 hover:bg-white/[0.08]"
+                                            >
+                                                <div className="relative mb-4 h-52 w-full overflow-hidden rounded-2xl bg-black/20">
+                                                    {a.posterUrl ? (
+                                                        <Image
+                                                            src={a.posterUrl}
+                                                            alt={a.title}
+                                                            fill
+                                                            className="object-cover transition duration-500 group-hover:scale-105"
+                                                        />
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center text-gray-400">
+                                                            No Image
+                                                        </div>
+                                                    )}
+
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                                    <div className="absolute left-3 top-3 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+                                                        ★ {formatRating(a.rating)}
+                                                    </div>
+                                                </div>
+
+                                                <h3 className="mb-1 line-clamp-1 text-lg font-semibold text-white">
+                                                    {a.title}
+                                                </h3>
+
+                                                <p className="line-clamp-3 text-sm text-gray-300">
+                                                    {a.description ?? "Описание отсутствует"}
+                                                </p>
+
+                                                <div className="mt-4 flex flex-wrap gap-x-2 gap-y-1 text-sm text-gray-400">
+                                                    <span>{a.releaseYear ?? "—"}</span>
+                                                    <span>•</span>
+                                                    <span>{statusToRu(a.status)}</span>
+                                                    <span>•</span>
+                                                    <span>
+                                                        {formatRating(a.rating)}{" "}
+                                                        <span className="text-gray-500">({a.ratingsCount})</span>
+                                                    </span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+
+                                    <div ref={sentinelRef} className="h-10" />
+
+                                    {loadingMore && <div className="mt-4 text-gray-300">Подгружаю ещё…</div>}
+                                    {!hasMore && (
+                                        <div className="mt-6 text-sm text-gray-400">Больше ничего нет.</div>
+                                    )}
+                                </>
+                            )}
+                        </section>
+                    </div>
                 </div>
             </div>
         </div>

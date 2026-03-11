@@ -3,14 +3,13 @@ BEGIN;
 -- Клинок, рассекающий демонов — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Клинок, рассекающий демонов — Сезон 1',
     'Эпоха Тайсё. Тандзиро Камадо возвращается домой и находит семью убитой; его сестра Нэдзуко превращена в демона. Он отправляется в опасный путь, чтобы найти убийцу и вернуть сестре человечность.',
     2019,
     'completed',
-    8.42,
     'https://tb2ah.anilib.top/public/iframe.php?id=8325'
   )
   RETURNING id
@@ -24,14 +23,13 @@ FROM inserted;
 -- Магическая битва — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Магическая битва — Сезон 1',
     'В мире, где проклятия рождаются из человеческих негативных эмоций, школьник Юдзи Итадори оказывается втянут в мир магов после того, как становится носителем проклятого артефакта — пальца Сукуны.',
     2020,
     'completed',
-    8.52,
     'https://tb2hl.anilib.top/public/iframe.php?id=8789'
   )
   RETURNING id
@@ -45,14 +43,13 @@ FROM inserted;
 -- Монолог фармацевта — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Монолог фармацевта — Сезон 1',
     '17-летнюю Маомао похищают и продают служанкой в императорский дворец. Когда дети императора заболевают, она применяет знания фармацевта и втягивается в придворные тайны и расследования.',
     2023,
     'completed',
-    8.85,
     'https://tb2u7.anilib.top/public/iframe.php?id=9555'
   )
   RETURNING id
@@ -66,14 +63,13 @@ FROM inserted;
 -- Бездомный бог — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Бездомный бог — Сезон 1',
     'Бродячий бог Ято берётся за любые просьбы за 5 иен, мечтая о собственном храме. После несчастного случая школьница Хиёри начинает «выходить» из тела и просит Ято вернуть её в норму.',
     2014,
     'completed',
-    7.94,
     'https://tb7p.anilib.top/public/iframe.php?id=485'
   )
   RETURNING id
@@ -87,14 +83,13 @@ FROM inserted;
 -- Доктор Стоун — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Доктор Стоун — Сезон 1',
     'Таинственная вспышка превращает всё человечество в камень. Спустя тысячи лет Тайдзю и гениальный Сэнку пробуждаются и решают возродить цивилизацию силой науки.',
     2019,
     'completed',
-    8.26,
     'https://tb2bs.anilib.top/public/iframe.php?id=8398'
   )
   RETURNING id
@@ -108,14 +103,13 @@ FROM inserted;
 -- Сага о Винланде — Сезон 1
 WITH inserted AS (
   INSERT INTO anime (
-    title, description, release_year, status, rating, external_url
+    title, description, release_year, status, external_url
   )
   VALUES (
     'Сага о Винланде — Сезон 1',
     '1002 год. Юный Торфинн живёт в Исландии и мечтает о приключениях, но война и столкновение с викингами переворачивают его жизнь и втягивают в жестокий мир сражений и мести.',
     2019,
     'completed',
-    8.77,
     'https://tb2bs.anilib.top/public/iframe.php?id=8424'
   )
   RETURNING id
@@ -179,8 +173,6 @@ INSERT INTO genres (name) VALUES
 ('Пародия'),
 ('Сатира'),
 ('Игры'),
-('Гарем'),
-('Реверс-гарем'),
 ('Этти'),
 ('Сёнэн-ай'),
 ('Сёдзё-ай'),

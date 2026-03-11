@@ -20,10 +20,9 @@ type PatchBody = {
   description?: string | null;
   releaseYear?: number | null;
   status?: string | null;
-  rating?: number | null;
   externalUrl?: string;
   posterUrl?: string | null;
-  genres?: string[]; // ✅
+  genres?: string[];
 };
 
 function normalizeGenreNames(list: unknown): string[] {
@@ -58,17 +57,16 @@ export const PATCH = withRole<RouteCtx>("admin", async (req, _ctx, routeCtx) => 
   const genreNames = body.genres !== undefined ? normalizeGenreNames(body.genres) : null;
 
   await db.transaction(async (tx) => {
-    await tx
-      .update(anime)
-      .set({
-        ...(nextTitle !== undefined ? { title: nextTitle } : {}),
-        ...(body.description !== undefined ? { description: body.description } : {}),
-        ...(body.releaseYear !== undefined ? { releaseYear: body.releaseYear } : {}),
-        ...(body.status !== undefined ? { status: (body.status ?? "ongoing") as any } : {}),
-        ...(body.rating !== undefined ? { rating: body.rating ?? 0 } : {}),
-        ...(nextExternalUrl !== undefined ? { externalUrl: nextExternalUrl } : {}),
-      })
-      .where(eq(anime.id, animeId));
+await tx
+  .update(anime)
+  .set({
+    ...(nextTitle !== undefined ? { title: nextTitle } : {}),
+    ...(body.description !== undefined ? { description: body.description } : {}),
+    ...(body.releaseYear !== undefined ? { releaseYear: body.releaseYear } : {}),
+    ...(body.status !== undefined ? { status: (body.status ?? "ongoing") as any } : {}),
+    ...(nextExternalUrl !== undefined ? { externalUrl: nextExternalUrl } : {}),
+  })
+  .where(eq(anime.id, animeId));
 
     if (body.posterUrl !== undefined) {
       const posterUrl = (body.posterUrl ?? "").trim();

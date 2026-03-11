@@ -1,126 +1,601 @@
 // src/app/page.tsx
+import type { ReactNode } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getServerSession } from "next-auth";
+import {
+  ArrowRight,
+  BarChart3,
+  Flame,
+  LibraryBig,
+  Search,
+  Shield,
+  Sparkles,
+  Clock3,
+} from "lucide-react";
+import { and, desc, eq, sql } from "drizzle-orm";
 
-export default function Home() {
-    return (
-        <div className="relative min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 overflow-hidden">
-            <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow"></div>
-                <div className="absolute top-40 -left-20 w-80 h-80 bg-violet-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow animation-delay-2000"></div>
-                <div className="absolute -bottom-40 left-40 w-80 h-80 bg-fuchsia-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-glow animation-delay-4000"></div>
+import { authOptions } from "./api/auth/[...nextauth]/route";
+import { db } from "../server/db";
+import {
+  anime as animeTable,
+  animeImages,
+  genres as genresTable,
+  users as usersTable,
+  ratings,
+} from "../server/db/schema";
+
+export const dynamic = "force-dynamic";
+
+function statusToRu(v: string | null | undefined) {
+  if (!v) return "—";
+  if (v === "ongoing") return "В процессе";
+  if (v === "completed") return "Завершено";
+  if (v === "hiatus") return "Пауза";
+  return v;
+}
+
+function formatRating(v: number | null | undefined) {
+  const n = Number(v ?? 0);
+  return Number.isFinite(n) ? n.toFixed(1) : "0.0";
+}
+
+type HomeAnimeCard = {
+  id: number;
+  title: string;
+  description: string | null;
+  releaseYear: number | null;
+  status: string | null;
+  rating: number | null;
+  ratingsCount: number;
+  posterUrl: string | null;
+};
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+  const isAuthed = Boolean(session);
+  const isAdmin = session?.user?.role === "admin";
+
+  const ratingAgg = db
+    .select({
+      animeId: ratings.animeId,
+      avgRating: sql<number>`coalesce(avg(${ratings.value}), 0)::float`.as("avg_rating"),
+      ratingsCount: sql<number>`count(${ratings.id})::int`.as("ratings_count"),
+    })
+    .from(ratings)
+    .groupBy(ratings.animeId)
+    .as("ra");
+
+  const ratingVal = sql<number>`coalesce(${(ratingAgg as any).avgRating}, 0)`;
+  const ratingsCountVal = sql<number>`coalesce(${(ratingAgg as any).ratingsCount}, 0)`;
+
+  const [animeCountRow, genreCountRow, userCountRow, featuredAnime, latestAnime] =
+    await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(animeTable),
+      db.select({ count: sql<number>`count(*)::int` }).from(genresTable),
+      db.select({ count: sql<number>`count(*)::int` }).from(usersTable),
+
+      db
+        .select({
+          id: animeTable.id,
+          title: animeTable.title,
+          description: animeTable.description,
+          releaseYear: animeTable.releaseYear,
+          status: animeTable.status,
+          rating: ratingVal.as("rating"),
+          ratingsCount: ratingsCountVal.as("ratingsCount"),
+          posterUrl: animeImages.imageUrl,
+        })
+        .from(animeTable)
+        .leftJoin(ratingAgg, eq((ratingAgg as any).animeId, animeTable.id))
+        .leftJoin(
+          animeImages,
+          and(eq(animeImages.animeId, animeTable.id), eq(animeImages.isPoster, true))
+        )
+        .orderBy(desc(ratingVal), desc(ratingsCountVal), desc(animeTable.createdAt))
+        .limit(3),
+
+      db
+        .select({
+          id: animeTable.id,
+          title: animeTable.title,
+          description: animeTable.description,
+          releaseYear: animeTable.releaseYear,
+          status: animeTable.status,
+          rating: ratingVal.as("rating"),
+          ratingsCount: ratingsCountVal.as("ratingsCount"),
+          posterUrl: animeImages.imageUrl,
+        })
+        .from(animeTable)
+        .leftJoin(ratingAgg, eq((ratingAgg as any).animeId, animeTable.id))
+        .leftJoin(
+          animeImages,
+          and(eq(animeImages.animeId, animeTable.id), eq(animeImages.isPoster, true))
+        )
+        .orderBy(desc(animeTable.createdAt))
+        .limit(6),
+    ]);
+
+  const stats = {
+    anime: Number(animeCountRow[0]?.count ?? 0),
+    genres: Number(genreCountRow[0]?.count ?? 0),
+    users: Number(userCountRow[0]?.count ?? 0),
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#07070d]">
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(168,85,247,0.20),transparent_30%),radial-gradient(circle_at_top_right,rgba(139,92,246,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(217,70,239,0.14),transparent_30%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:42px_42px] opacity-[0.12]" />
+        <div className="absolute -top-24 left-[8%] h-72 w-72 rounded-full bg-purple-600/20 blur-3xl" />
+        <div className="absolute top-32 right-[6%] h-80 w-80 rounded-full bg-violet-500/20 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-fuchsia-500/15 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 px-4 pt-28 pb-16">
+        <div className="mx-auto max-w-7xl">
+          <section className="grid items-center gap-10 lg:grid-cols-[1.15fr_0.85fr]">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-purple-200 backdrop-blur-md">
+                <Sparkles className="h-4 w-4" />
+                Ваша персональная аниме-библиотека
+              </div>
+
+              <h1 className="mt-6 text-5xl font-black leading-tight text-white sm:text-6xl xl:text-7xl">
+                Kitsune —
+                <span className="block bg-gradient-to-r from-purple-300 via-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
+                  красиво хранить,
+                </span>
+                <span className="block text-white/95">искать и отмечать аниме</span>
+              </h1>
+
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-300 sm:text-xl">
+                Каталог, быстрый поиск, личные списки, избранное, оценки и удобная
+                админка для наполнения базы. Всё в одном аккуратном интерфейсе.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-4">
+                {isAuthed ? (
+                  <>
+                    <Link
+                      href="/catalog"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-600 px-6 py-4 font-semibold text-white shadow-lg shadow-purple-500/25 transition hover:scale-[1.02] hover:from-purple-700 hover:to-violet-700"
+                    >
+                      Открыть каталог
+                      <ArrowRight className="h-5 w-5" />
+                    </Link>
+
+                    <Link
+                      href="/profile"
+                      className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/8 px-6 py-4 font-semibold text-white backdrop-blur-md transition hover:bg-white/12"
+                    >
+                      Перейти в профиль
+                    </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="inline-flex items-center gap-2 rounded-2xl border border-purple-400/30 bg-purple-500/10 px-6 py-4 font-semibold text-purple-100 transition hover:bg-purple-500/15"
+                      >
+                        <Shield className="h-5 w-5" />
+                        Админ-панель
+                      </Link>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href="/auth/register"
+                      className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-violet-600 px-6 py-4 font-semibold text-white shadow-lg shadow-purple-500/25 transition hover:scale-[1.02] hover:from-purple-700 hover:to-violet-700"
+                    >
+                      Создать аккаунт
+                      <ArrowRight className="h-5 w-5" />
+                    </Link>
+
+                    <Link
+                      href="/auth/login"
+                      className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/8 px-6 py-4 font-semibold text-white backdrop-blur-md transition hover:bg-white/12"
+                    >
+                      Войти
+                    </Link>
+                  </>
+                )}
+              </div>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <QuickLink href="/catalog?sort=rating" label="Лучшее по рейтингу" />
+                <QuickLink href="/catalog?status=ongoing" label="Сейчас выходят" />
+                <QuickLink href="/catalog?status=completed" label="Завершённые" />
+                <QuickLink href="/catalog?sort=year" label="По году" />
+              </div>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-3">
+                <StatCard value={stats.anime} label="Тайтлов в базе" />
+                <StatCard value={stats.genres} label="Жанров" />
+                <StatCard value={stats.users} label="Пользователей" />
+              </div>
             </div>
 
-            <div className="relative z-10 container mx-auto px-4 py-16">
-                <main className="max-w-6xl mx-auto">
-                    <div className="grid md:grid-cols-2 gap-12 items-center">
-                        <div className="space-y-8">
-                            <h1 className="text-6xl font-bold leading-tight">
-                                <span className="block text-white">Kitsune</span>
-                                <span className="block bg-gradient-to-r from-purple-400 via-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
-                                    Аниме библиотека
-                                </span>
-                            </h1>
-
-                            <p className="text-xl text-gray-300 leading-relaxed">
-                                Умная платформа для коллекционирования, отслеживания и обсуждения аниме.
-                                Ваш персональный помощник в коллекции.
-                            </p>
-
-                            <div className="flex flex-wrap gap-4 pt-4">
-                                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3">
-                                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-violet-500 rounded-lg flex items-center justify-center">
-                                        <span className="text-sm font-bold">A</span>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-white">10K+</div>
-                                        <div className="text-sm text-gray-400">Аниме в коллекции</div>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-2 bg-white/5 backdrop-blur-sm rounded-xl px-4 py-3">
-                                    <div className="w-8 h-8 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-lg flex items-center justify-center">
-                                        <span className="text-sm font-bold">U</span>
-                                    </div>
-                                    <div>
-                                        <div className="text-2xl font-bold text-white">50K+</div>
-                                        <div className="text-sm text-gray-400">Пользователей</div>
-                                    </div>
-                                </div>
-                            </div>
+            <div className="relative">
+              <div className="rounded-[32px] border border-white/10 bg-white/6 p-4 shadow-2xl backdrop-blur-xl">
+                <div className="rounded-[28px] border border-white/10 bg-gradient-to-br from-white/10 to-white/5 p-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600 to-violet-600 shadow-lg shadow-purple-500/25">
+                        <Image src="/fox.png" alt="Kitsune" width={28} height={28} />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-400">Быстрый старт</div>
+                        <div className="text-xl font-bold text-white">
+                          {isAuthed
+                            ? `Привет, ${session?.user?.name ?? "пользователь"}`
+                            : "Добро пожаловать"}
                         </div>
-
-                        <div className="relative">
-                            <div className="relative bg-gradient-to-br from-gray-900/80 to-purple-900/30 backdrop-blur-xl rounded-3xl border border-white/10 p-8 shadow-2xl">
-                                <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-r from-purple-600 to-violet-600 rounded-2xl rotate-12 animate-float flex items-center justify-center">
-                                    <Image
-                                        src="/fox.png"
-                                        alt="Logo"
-                                        width={40}
-                                        height={40}
-                                        className="w-10 h-10"
-                                    />
-                                </div>
-
-                                <div className="mb-8">
-                                    <h3 className="text-2xl font-bold text-white mb-2">
-                                        Присоединяйтесь к нам
-                                    </h3>
-                                    <p className="text-gray-400">
-                                        Начните собирать свою коллекцию аниме
-                                    </p>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <Link
-                                            href="/auth/login"
-                                            className="py-4 px-6 bg-gradient-to-r from-purple-600/20 to-violet-600/20 border border-purple-500/30 rounded-xl text-center hover:from-purple-600/30 hover:to-violet-600/30 transition-all duration-300 group"
-                                        >
-                                            <div className="text-lg font-semibold text-white group-hover:text-purple-200">
-                                                Вход
-                                            </div>
-                                            <div className="text-sm text-gray-400 group-hover:text-gray-300">
-                                                В аккаунт
-                                            </div>
-                                        </Link>
-
-                                        <Link
-                                            href="/auth/register"
-                                            className="py-4 px-6 bg-gradient-to-r from-purple-600 to-violet-600 rounded-xl text-center hover:from-purple-700 hover:to-violet-700 transition-all duration-300 shadow-lg shadow-purple-500/25 group"
-                                        >
-                                            <div className="text-lg font-semibold text-white">
-                                                Регистрация
-                                            </div>
-                                            <div className="text-sm text-purple-200">
-                                                Создать аккаунт
-                                            </div>
-                                        </Link>
-                                    </div>
-
-                                    <div className="text-center text-gray-500 text-sm">
-                                        Или используйте социальные сети
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                      </div>
                     </div>
-
-                    <div className="mt-20 grid md:grid-cols-3 gap-8">
-                        {[
-                            { icon: "Умные рекомендации", title: "Умные рекомендации", desc: "Подберем аниме по вашим вкусам" },
-                            { icon: "Статистика", title: "Статистика просмотра", desc: "Отслеживайте свой прогресс и достижения" },
-                            { icon: "Сообщество", title: "Сообщество", desc: "Общайтесь с другими энтузиастами" }
-                        ].map((feature, i) => (
-                            <div key={i} className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:border-purple-500/30 transition-all duration-300">
-                                <div className="text-sm font-bold text-purple-300 mb-4">{feature.icon}</div>
-                                <h4 className="text-xl font-bold text-white mb-2">{feature.title}</h4>
-                                <p className="text-gray-400">{feature.desc}</p>
-                            </div>
-                        ))}
+                    <div className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-gray-300">
+                      Нажми / для поиска
                     </div>
-                </main>
+                  </div>
+
+                  <div className="mt-5 grid gap-3">
+                    <FeatureMini
+                      icon={<Search className="h-5 w-5" />}
+                      title="Быстрый поиск"
+                      text="Поиск по названию прямо из хедера с быстрым открытием страницы тайтла."
+                    />
+                    <FeatureMini
+                      icon={<LibraryBig className="h-5 w-5" />}
+                      title="Личный список"
+                      text="Отмечай: смотрю, отложено, брошено, просмотрено."
+                    />
+                    <FeatureMini
+                      icon={<BarChart3 className="h-5 w-5" />}
+                      title="Оценки и избранное"
+                      text="Сохраняй любимые аниме и ставь свои оценки."
+                    />
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-3">
+                    <GlassButton href="/catalog" label="Каталог" />
+                    <GlassButton
+                      href={isAuthed ? "/profile" : "/auth/login"}
+                      label={isAuthed ? "Профиль" : "Вход"}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
+          </section>
+
+          <section className="mt-20">
+            <SectionTitle
+              eyebrow="Возможности"
+              title="Не просто красивая главная, а полезная стартовая точка"
+              text="Сразу ведёт пользователя в каталог, профиль, поиск и популярные разделы."
+            />
+
+            <div className="mt-8 grid gap-6 md:grid-cols-3">
+              <FeatureCard
+                icon={<Search className="h-6 w-6" />}
+                title="Умный вход в каталог"
+                text="Быстрые ссылки по статусам и рейтингу помогают перейти к просмотру без лишних кликов."
+              />
+              <FeatureCard
+                icon={<LibraryBig className="h-6 w-6" />}
+                title="Персональный прогресс"
+                text="После входа пользователь сразу получает доступ к профилю, спискам и любимым тайтлам."
+              />
+              <FeatureCard
+                icon={<Shield className="h-6 w-6" />}
+                title="Поддержка админа"
+                text="Если аккаунт админский — на главной сразу появляется прямой доступ в панель управления."
+              />
+            </div>
+          </section>
+
+          <section className="mt-20">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="text-sm font-medium uppercase tracking-[0.22em] text-purple-300">
+                  Популярное
+                </div>
+                <h2 className="mt-2 text-3xl font-bold text-white">Лучшее из базы</h2>
+              </div>
+
+              <Link
+                href="/catalog?sort=rating"
+                className="inline-flex items-center gap-2 text-sm text-gray-300 transition hover:text-white"
+              >
+                Смотреть всё
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {featuredAnime.length === 0 ? (
+              <EmptyBlock text="Пока в базе нет тайтлов. Добавь их через админку — и секция заполнится автоматически." />
+            ) : (
+              <div className="grid gap-6 lg:grid-cols-3">
+                {featuredAnime.map((item, index) => (
+                  <FeaturedAnimeCard key={item.id} item={item} index={index} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-20">
+            <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-sm font-medium uppercase tracking-[0.22em] text-violet-300">
+                  <Clock3 className="h-4 w-4" />
+                  Недавно добавленные
+                </div>
+                <h2 className="mt-2 text-3xl font-bold text-white">Свежие тайтлы</h2>
+              </div>
+
+              <Link
+                href="/catalog?sort=new"
+                className="inline-flex items-center gap-2 text-sm text-gray-300 transition hover:text-white"
+              >
+                Открыть каталог
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {latestAnime.length === 0 ? (
+              <EmptyBlock text="Недавно добавленные тайтлы появятся здесь автоматически." />
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {latestAnime.map((item) => (
+                  <CompactAnimeCard key={item.id} item={item} />
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-20">
+            <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-gradient-to-br from-purple-600/15 via-violet-600/10 to-fuchsia-600/15 p-8 backdrop-blur-xl sm:p-10">
+              <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-purple-500/20 blur-3xl" />
+              <div className="absolute bottom-0 left-0 h-40 w-40 rounded-full bg-fuchsia-500/20 blur-3xl" />
+
+              <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+                <div className="max-w-2xl">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-4 py-2 text-sm text-purple-100">
+                    <Flame className="h-4 w-4" />
+                    Готово к использованию
+                  </div>
+
+                  <h2 className="mt-5 text-3xl font-bold text-white sm:text-4xl">
+                    Сделай главную страницу местом, куда приятно возвращаться
+                  </h2>
+
+                  <p className="mt-4 text-lg leading-8 text-gray-200/90">
+                    Уже сейчас можно искать аниме, вести личные списки, сохранять
+                    любимое, ставить оценки и управлять базой через админку.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <Link
+                    href="/catalog"
+                    className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-4 font-semibold text-gray-900 transition hover:scale-[1.02]"
+                  >
+                    Перейти в каталог
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+
+                  {!isAuthed && (
+                    <Link
+                      href="/auth/register"
+                      className="inline-flex items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-6 py-4 font-semibold text-white transition hover:bg-white/15"
+                    >
+                      Зарегистрироваться
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
-    );
+      </div>
+    </div>
+  );
+}
+
+function SectionTitle({
+  eyebrow,
+  title,
+  text,
+}: {
+  eyebrow: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="max-w-3xl">
+      <div className="text-sm font-medium uppercase tracking-[0.22em] text-purple-300">
+        {eyebrow}
+      </div>
+      <h2 className="mt-3 text-3xl font-bold text-white sm:text-4xl">{title}</h2>
+      <p className="mt-4 text-lg leading-8 text-gray-300">{text}</p>
+    </div>
+  );
+}
+
+function StatCard({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/6 p-4 backdrop-blur-md">
+      <div className="text-3xl font-black text-white">{value.toLocaleString("ru-RU")}+</div>
+      <div className="mt-1 text-sm text-gray-400">{label}</div>
+    </div>
+  );
+}
+
+function QuickLink({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-gray-200 transition hover:bg-white/10 hover:text-white"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function GlassButton({ href, label }: { href: string; label: string }) {
+  return (
+    <Link
+      href={href}
+      className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-center font-medium text-white transition hover:bg-white/10"
+    >
+      {label}
+    </Link>
+  );
+}
+
+function FeatureMini({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+      <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-r from-purple-600/30 to-violet-600/30 text-purple-200">
+        {icon}
+      </div>
+      <div className="font-semibold text-white">{title}</div>
+      <div className="mt-1 text-sm leading-6 text-gray-400">{text}</div>
+    </div>
+  );
+}
+
+function FeatureCard({
+  icon,
+  title,
+  text,
+}: {
+  icon: ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-[28px] border border-white/10 bg-white/6 p-6 backdrop-blur-xl transition hover:-translate-y-1 hover:border-purple-400/25 hover:bg-white/8">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-r from-purple-600/20 to-violet-600/20 text-purple-200">
+        {icon}
+      </div>
+      <h3 className="text-xl font-bold text-white">{title}</h3>
+      <p className="mt-3 leading-7 text-gray-300">{text}</p>
+    </div>
+  );
+}
+
+function FeaturedAnimeCard({
+  item,
+  index,
+}: {
+  item: HomeAnimeCard;
+  index: number;
+}) {
+  return (
+    <Link
+      href={`/anime/${item.id}`}
+      className="group overflow-hidden rounded-[30px] border border-white/10 bg-white/6 backdrop-blur-xl transition hover:-translate-y-1 hover:border-purple-400/30"
+    >
+      <div className="relative h-72 w-full overflow-hidden bg-black/30">
+        {item.posterUrl ? (
+          <Image
+            src={item.posterUrl}
+            alt={item.title}
+            fill
+            className="object-cover transition duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-gray-500">
+            No Image
+          </div>
+        )}
+
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/35 to-transparent" />
+
+        <div className="absolute left-4 top-4 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+          TOP {index + 1}
+        </div>
+
+        <div className="absolute left-4 right-4 top-4 flex items-center justify-between gap-2">
+          <div className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+            ★ {formatRating(item.rating)}
+          </div>
+          <div className="rounded-full border border-white/10 bg-black/40 px-3 py-1 text-xs text-white/90 backdrop-blur-md">
+            Оценок: {item.ratingsCount}
+          </div>
+        </div>
+
+        <div className="absolute bottom-0 left-0 right-0 p-5">
+          <div className="text-sm text-purple-200">
+            {item.releaseYear ?? "—"} • {statusToRu(item.status)}
+          </div>
+          <h3 className="mt-2 text-2xl font-bold text-white line-clamp-2">{item.title}</h3>
+          <p className="mt-3 text-sm leading-6 text-gray-200/90 line-clamp-3">
+            {item.description ?? "Описание отсутствует"}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function CompactAnimeCard({ item }: { item: HomeAnimeCard }) {
+  return (
+    <Link
+      href={`/anime/${item.id}`}
+      className="group flex gap-4 rounded-[26px] border border-white/10 bg-white/6 p-4 backdrop-blur-xl transition hover:border-violet-400/30 hover:bg-white/8"
+    >
+      <div className="relative h-28 w-20 shrink-0 overflow-hidden rounded-2xl bg-black/30">
+        {item.posterUrl ? (
+          <Image
+            src={item.posterUrl}
+            alt={item.title}
+            fill
+            className="object-cover transition duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[11px] text-gray-500">
+            No Image
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap gap-2 text-xs text-gray-400">
+          <span>{item.releaseYear ?? "—"}</span>
+          <span>•</span>
+          <span>{statusToRu(item.status)}</span>
+          <span>•</span>
+          <span>★ {formatRating(item.rating)}</span>
+          <span>•</span>
+          <span>{item.ratingsCount} оценок</span>
+        </div>
+
+        <div className="mt-2 text-lg font-semibold text-white line-clamp-1">
+          {item.title}
+        </div>
+
+        <div className="mt-2 text-sm leading-6 text-gray-300 line-clamp-3">
+          {item.description ?? "Описание отсутствует"}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+function EmptyBlock({ text }: { text: string }) {
+  return (
+    <div className="rounded-[28px] border border-dashed border-white/15 bg-white/5 p-8 text-gray-300">
+      {text}
+    </div>
+  );
 }
