@@ -1,150 +1,222 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
-import { Heart } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Heart, Loader2 } from "lucide-react";
+
+import SelectMenu, { type SelectOption } from "./SelectMenu";
 
 type WatchStatus = "watching" | "planned" | "dropped" | "completed";
 
-const LABELS: Record<WatchStatus, string> = {
-  watching: "Смотрю",
-  planned: "Отложено",
-  dropped: "Брошено",
-  completed: "Просмотрено",
+type Props = {
+  animeId: number;
+  initialStatus: WatchStatus | null;
+  initialRating: number | null;
+  initialLoved: boolean;
 };
+
+const STATUS_OPTIONS: readonly SelectOption[] = [
+  { value: "", label: "Не выбран" },
+  { value: "watching", label: "Смотрю" },
+  { value: "planned", label: "Запланировано" },
+  { value: "completed", label: "Просмотрено" },
+  { value: "dropped", label: "Брошено" },
+];
+
+const RATING_OPTIONS: readonly SelectOption[] = [
+  { value: "", label: "Без оценки" },
+  ...Array.from({ length: 10 }, (_, i) => ({
+    value: String(i + 1),
+    label: String(i + 1),
+  })),
+];
+
+async function sendJson(url: string, body: unknown) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || "Не удалось выполнить запрос");
+  }
+
+  return res;
+}
 
 export default function AnimeUserActions({
   animeId,
   initialStatus,
   initialRating,
   initialLoved,
-}: {
-  animeId: number;
-  initialStatus: WatchStatus | null;
-  initialRating: number | null;
-  initialLoved: boolean;
-}) {
-  const { status: sessionStatus } = useSession();
-  const router = useRouter();
+}: Props) {
+  const [status, setStatus] = useState<string>(initialStatus ?? "");
+  const [rating, setRating] = useState<string>(
+    initialRating ? String(initialRating) : ""
+  );
+  const [loved, setLoved] = useState(initialLoved);
 
-  const [watchStatus, setWatchStatus] = useState<WatchStatus | "none">(initialStatus ?? "none");
-  const [rating, setRating] = useState<number | "none">(initialRating ?? "none");
-  const [loved, setLoved] = useState<boolean>(Boolean(initialLoved));
-  const [saving, setSaving] = useState(false);
+  const [favoritePending, setFavoritePending] = useState(false);
+  const [statusPending, startStatusTransition] = useTransition();
+  const [ratingPending, startRatingTransition] = useTransition();
 
-  if (sessionStatus !== "authenticated") return null;
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  const saveStatus = async (next: WatchStatus | "none") => {
-    setSaving(true);
-    setWatchStatus(next);
-
-    const res = await fetch("/api/user/anime-status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ animeId, status: next }),
-    });
-
-    setSaving(false);
-    if (res.status === 401) router.push("/auth/login");
-    router.refresh();
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
   };
 
-  const saveRating = async (next: number | "none") => {
-    setSaving(true);
-    setRating(next);
+  const handleToggleFavorite = async () => {
+    clearMessages();
+    setFavoritePending(true);
 
-    const res = await fetch("/api/user/rating", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ animeId, value: next === "none" ? null : next }),
-    });
+    try {
+      const nextLoved = !loved;
 
-    setSaving(false);
-    if (res.status === 401) router.push("/auth/login");
-    router.refresh();
+      await sendJson("/api/favorites/toggle", {
+        animeId,
+        loved: nextLoved,
+      });
+
+      setLoved(nextLoved);
+      setSuccess(nextLoved ? "Добавлено в любимое" : "Удалено из любимого");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Ошибка при обновлении избранного");
+    } finally {
+      setFavoritePending(false);
+    }
   };
 
-  const toggleLoved = async () => {
-    const next = !loved;
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    clearMessages();
 
-    setSaving(true);
-    setLoved(next);
+    startStatusTransition(async () => {
+      try {
+        await sendJson("/api/user-anime-status", {
+          animeId,
+          status: value || null,
+        });
 
-    const res = await fetch("/api/user/loved", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ animeId, loved: next }),
+        setSuccess("Статус сохранён");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ошибка при сохранении статуса");
+      }
     });
+  };
 
-    setSaving(false);
-    if (res.status === 401) router.push("/auth/login");
-    router.refresh();
+  const handleRatingChange = (value: string) => {
+    setRating(value);
+    clearMessages();
+
+    startRatingTransition(async () => {
+      try {
+        await sendJson("/api/ratings", {
+          animeId,
+          value: value === "" ? null : Number(value),
+        });
+
+        setSuccess(value === "" ? "Оценка удалена" : "Оценка сохранена");
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Ошибка при сохранении оценки");
+      }
+    });
   };
 
   return (
-    <div className="mt-6 space-y-4">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-        <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4">
+      <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+        <div className="flex items-center justify-between gap-4">
           <div>
-            <div className="text-sm text-gray-300">Любимое</div>
-            <div className="text-xs text-gray-500 mt-1">
-              Сохраняется в базе в таблицу <code>favorites</code>.
+            <div className="text-sm font-medium text-white">Любимое</div>
+            <div className="mt-1 text-xs text-gray-400">
+              Сохраняется в базе в таблицу favorites
             </div>
           </div>
 
           <button
             type="button"
-            onClick={toggleLoved}
-            disabled={saving}
-            className={`shrink-0 px-4 py-2 rounded-xl border transition-all flex items-center gap-2 ${loved
-                ? "bg-pink-500/20 border-pink-500/40 text-pink-100 hover:bg-pink-500/25"
-                : "bg-white/10 border-white/15 text-white hover:bg-white/15"
-              }`}
+            onClick={handleToggleFavorite}
+            disabled={favoritePending}
+            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+              loved
+                ? "border-pink-400/30 bg-pink-500/15 text-pink-100 hover:bg-pink-500/20"
+                : "border-white/15 bg-white/8 text-white hover:bg-white/12"
+            } disabled:cursor-not-allowed disabled:opacity-70`}
           >
-            <Heart className={`w-5 h-5 ${loved ? "fill-current" : ""}`} />
+            {favoritePending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Heart className={`h-4 w-4 ${loved ? "fill-current" : ""}`} />
+            )}
             {loved ? "В любимом" : "В любимое"}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <div className="text-sm text-gray-300 mb-2">Мой список</div>
-          <select
-            value={watchStatus}
-            onChange={(e) => saveStatus(e.target.value as any)}
-            disabled={saving}
-            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-          >
-            <option value="none">Не в списке</option>
-            {Object.entries(LABELS).map(([key, label]) => (
-              <option key={key} value={key}>
-                {label}
-              </option>
-            ))}
-          </select>
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-sm font-medium text-white">Мой список</div>
+            {statusPending && (
+              <div className="inline-flex items-center gap-2 text-xs text-purple-200">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Сохраняется...
+              </div>
+            )}
+          </div>
+
+          <SelectMenu
+            value={status}
+            options={STATUS_OPTIONS}
+            onChange={handleStatusChange}
+            placeholder="Выбери статус"
+            className="w-full"
+            buttonClassName="bg-white/[0.06] hover:bg-white/[0.1] border-white/10 rounded-2xl"
+            menuClassName="border-white/10 bg-[#0b0b14]/95"
+          />
         </div>
 
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <div className="text-sm text-gray-300 mb-2">Моя оценка (1–10)</div>
-          <select
-            value={rating}
-            onChange={(e) => saveRating(e.target.value === "none" ? "none" : Number(e.target.value))}
-            disabled={saving}
-            className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none"
-          >
-            <option value="none">Нет оценки</option>
-            {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => (
-              <option key={v} value={v}>
-                {v}
-              </option>
-            ))}
-          </select>
+        <div className="rounded-[24px] border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="text-sm font-medium text-white">Моя оценка (1–10)</div>
+            {ratingPending && (
+              <div className="inline-flex items-center gap-2 text-xs text-amber-200">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Сохраняется...
+              </div>
+            )}
+          </div>
 
-          {saving && <div className="text-xs text-gray-400 mt-2">Сохраняю…</div>}
+          <SelectMenu
+            value={rating}
+            options={RATING_OPTIONS}
+            onChange={handleRatingChange}
+            placeholder="Поставить оценку"
+            className="w-full"
+            align="right"
+            buttonClassName="bg-white/[0.06] hover:bg-white/[0.1] border-white/10 rounded-2xl"
+            menuClassName="border-white/10 bg-[#0b0b14]/95"
+          />
         </div>
       </div>
+
+      {error && (
+        <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+          {success}
+        </div>
+      )}
     </div>
   );
 }
